@@ -2985,6 +2985,42 @@ static LogicalResult verify(AffineVectorStoreOp op) {
 }
 
 //===----------------------------------------------------------------------===//
+// PolyDLGEMMOp
+//===----------------------------------------------------------------------===//
+
+/*
+void PolyDLGEMMOp::build(OpBuilder &builder, OperationState &result,
+        Value memrefA, Value memrefB, Value memrefC) {
+        result.addOperands(memrefA);
+        result.addOperands(memrefB);
+        result.addOperands(memrefC);
+}
+*/
+
+void PolyDLGEMMOp::build(OpBuilder &b, OperationState &state, Value A, Value B,
+                         Value C, int64_t M, int64_t N, int64_t K) {
+
+  // Call into the auto-generated build method.
+  build(b, state, A, B, C, b.getI64IntegerAttr(M), b.getI64IntegerAttr(M),
+        b.getI64IntegerAttr(M));
+}
+
+static ParseResult parsePolyDLGEMMOp(OpAsmParser &parser,
+                                     OperationState &result) {
+
+  // TODO: Implement a parser
+
+  return success();
+}
+
+static void print(OpAsmPrinter &p, PolyDLGEMMOp op) {
+  p << "polydl_matmul_f32( " << op.memrefA() << " , " << op.memrefB() << " , "
+    << op.memrefC() << "," << op.M() << "," << op.N() << "," << op.K() << ")";
+}
+
+static LogicalResult verify(PolyDLGEMMOp op) { return success(); }
+
+//===----------------------------------------------------------------------===//
 // TableGen'd op method definitions
 //===----------------------------------------------------------------------===//
 

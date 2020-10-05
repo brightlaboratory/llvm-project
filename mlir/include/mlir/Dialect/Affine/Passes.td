@@ -34,8 +34,9 @@ def AffineDataCopyGeneration : FunctionPass<"affine-data-copy-generate"> {
            /*default=*/"0",
            "Slow memory space identifier for copy generation (default: 0)">,
     Option<"skipNonUnitStrideLoops", "skip-non-unit-stride-loops", "bool",
-           /*default=*/"false", "Testing purposes: avoid non-unit stride loop "
-                                "choice depths for copy placement">,
+           /*default=*/"false",
+           "Testing purposes: avoid non-unit stride loop "
+           "choice depths for copy placement">,
     Option<"tagMemorySpace", "tag-mem-space", "unsigned",
            /*default=*/"0",
            "Tag memory space identifier for copy generation (default: 0)">,
@@ -130,6 +131,11 @@ def SimplifyAffineStructures : FunctionPass<"simplify-affine-structures"> {
   let summary = "Simplify affine expressions in maps/sets and normalize "
                 "memrefs";
   let constructor = "mlir::createSimplifyAffineStructuresPass()";
+}
+
+def GEMMRecognizer : FunctionPass<"affine-gemm-recognizer"> {
+  let summary = "Recognize GEneral Matrix Multiplication (GEMM) operations";
+  let constructor = "mlir::createGEMMRecognizerPass()";
 }
 
 #endif // MLIR_DIALECT_AFFINE_PASSES
