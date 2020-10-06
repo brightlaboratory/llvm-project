@@ -4,6 +4,7 @@ add_mlir_dialect_library(MLIRAffineTransforms
   AffineParallelize.cpp
   AffineParallelNormalize.cpp
   LoopTiling.cpp
+  PolyDLPass.cpp
   LoopUnroll.cpp
   LoopUnrollAndJam.cpp
   SuperVectorize.cpp

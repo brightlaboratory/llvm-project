@@ -15,11 +15,17 @@
 #define MLIR_DIALECT_AFFINE_TRANSFORMS_PASSES_H
 
 #include "mlir/Pass/Pass.h"
+#include "mlir/Support/LLVM.h"
+#include <functional>
 #include <limits>
 
 namespace mlir {
 
 class AffineForOp;
+class FuncOp;
+class ModuleOp;
+class Pass;
+template <typename T> class OperationPass;
 
 /// Creates a simplification pass for affine structures (maps and sets). In
 /// addition, this pass also normalizes memrefs to have the trivial (identity)
@@ -53,6 +59,7 @@ std::unique_ptr<OperationPass<FuncOp>>
 createLoopTilingPass(uint64_t cacheSizeBytes);
 /// Overload relying on pass options for initialization.
 std::unique_ptr<OperationPass<FuncOp>> createLoopTilingPass();
+std::unique_ptr<OperationPass<FuncOp>> createPolyDLPassPass();
 
 /// Creates a loop unrolling pass with the provided parameters.
 /// 'getUnrollFactor' is a function callback for clients to supply a function

@@ -65,6 +65,12 @@ def AffineLoopTiling : FunctionPass<"affine-loop-tile"> {
   ];
 }
 
+def PolyDLPass
+    : FunctionPass<"affine-polydl"> {
+  let summary = "Create Different Tile sized codes using Loop Tiling Pass";
+  let constructor = "mlir::createPolyDLPassPass()";
+}
+
 def AffineLoopUnroll : FunctionPass<"affine-loop-unroll"> {
   let summary = "Unroll affine loops";
   let constructor = "mlir::createLoopUnrollPass()";
