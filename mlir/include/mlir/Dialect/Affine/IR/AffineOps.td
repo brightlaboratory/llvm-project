@@ -1061,13 +1061,12 @@ def PolyDLGEMMOp : Affine_Op<"polydl_matmul_f32"> {
   let summary = "matrix multiplication operation";
   let description = [{matrix multiplication.}];
 
-  let arguments = (ins AnyMemRef
-                   : $memrefA, AnyMemRef
-                   : $memrefB, AnyMemRef
-                   : $memrefC, I64Attr
-                   : $M, I64Attr
-                   : $N, I64Attr
-                   : $K);
+  let arguments = (ins AnyRankedOrUnrankedMemRef: $memrefA, 
+				   AnyRankedOrUnrankedMemRef: $memrefB, 
+				   AnyRankedOrUnrankedMemRef: $memrefC, 
+				   I64Attr: $M, 
+				   I64Attr: $N, 
+				   I64Attr: $K);
 
   let builders =
       [OpBuilder<"OpBuilder &b, OperationState &state, Value A, Value B, Value "
