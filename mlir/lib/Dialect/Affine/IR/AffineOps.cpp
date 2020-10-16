@@ -3018,8 +3018,8 @@ void PolyDLGEMMOp::build(OpBuilder &b, OperationState &state, Value A, Value B,
 	Value C, int64_t M, int64_t N, int64_t K) {
 
 	// Call into the auto-generated build method.
-	build(b, state, A, B, C, b.getI64IntegerAttr(M), b.getI64IntegerAttr(M),
-		b.getI64IntegerAttr(M));
+	build(b, state, A, B, C, b.getI64IntegerAttr(M), b.getI64IntegerAttr(N),
+		b.getI64IntegerAttr(K));
 }
 
 static ParseResult parsePolyDLGEMMOp(OpAsmParser &parser,
