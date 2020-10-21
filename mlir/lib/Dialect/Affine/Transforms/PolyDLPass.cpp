@@ -24,6 +24,7 @@
 #include "mlir/Transforms/Utils.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
+#include "mlir/IR/PatternMatch.h"
 using namespace mlir;
 
 using llvm::dbgs;
@@ -87,12 +88,70 @@ void PolyDLPass::generateFuncCopies(FuncOp f, SmallVector<unsigned, 6> tileSizes
     getTileableBands(f, &bands);
 
     for (auto &band : bands) {
-        
+        unsigned loopNestIdx = band.size() - 1;
+
+        SmallVector<AffineForOp, 6> nest;
+        std::vector<int>::iterator it;
+        int index = 0;
+        for (auto i : permMap){
+            if (i==0)
+                break;
+            index++;
+        } 
+
         permuteLoops(band, permMap);
 
+        if(auto temp =  dyn_cast<AffineForOp>(*band[index]))
+            getPerfectlyNestedLoops(nest, temp);
+
         SmallVector<AffineForOp, 6> tiledNest;
-        if (failed(tilePerfectlyNested(band, tileSizes, &tiledNest)))
+        if (failed(tilePerfectlyNested(nest, tileSizes, &tiledNest)))
         return signalPassFailure();
+
+        for (auto i : tiledNest) 
+            dbgs()<< "tiledNest" << *i  << '\n'; 
+
+        unsigned innermostLoopIdx = tiledNest.size() -1;
+
+        auto innermostLoop = tiledNest[innermostLoopIdx];
+        dbgs()<< "innermostLoop" <<  innermostLoop << '\n';
+        auto loopNest = tiledNest[loopNestIdx];
+
+        AffineStoreOp store;
+        for (auto &op : *innermostLoop.getBody()) {
+          if (auto ld = dyn_cast<AffineStoreOp>(op)) {
+            store = ld;
+            break;
+          }
+        }
+
+        AffineCopyOptions copyOptions = {/*generateDma=*/false,
+                                       /*slowMemorySpace=*/0,
+                                       /*fastMemorySpace=*/0,
+                                       /*tagMemorySpace=*/0,
+                                       /*fastMemCapacityBytes=*/32 * 1024 * 1024UL};
+        DenseSet<Operation *> copyNests;
+
+        affineDataCopyGenerate(loopNest, copyOptions, store.getMemRef(), copyNests);
+        for (auto i : copyNests) 
+            dbgs()<< "copyNests" << *i  << '\n'; 
+            
+        SmallVector<Operation *, 4> copyOps;
+        for (auto nest : copyNests)
+            // With a post order walk, the erasure of loops does not affect
+            // continuation of the walk or the collection of load/store ops.
+            nest->walk([&](Operation *op) {
+            if (auto forOp = dyn_cast<AffineForOp>(op))
+                promoteIfSingleIteration(forOp);
+            else if (auto loadOp = dyn_cast<AffineLoadOp>(op))
+                copyOps.push_back(loadOp);
+            else if (auto storeOp = dyn_cast<AffineStoreOp>(op))
+                copyOps.push_back(storeOp);
+            });
+
+        for (auto i : copyOps) 
+            dbgs()<< "copyOps" << *i  << '\n';
+
         
     }
 
