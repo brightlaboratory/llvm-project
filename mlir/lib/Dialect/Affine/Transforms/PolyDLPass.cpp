@@ -133,25 +133,6 @@ void PolyDLPass::generateFuncCopies(FuncOp f, SmallVector<unsigned, 6> tileSizes
         DenseSet<Operation *> copyNests;
 
         affineDataCopyGenerate(loopNest, copyOptions, store.getMemRef(), copyNests);
-        for (auto i : copyNests) 
-            dbgs()<< "copyNests" << *i  << '\n'; 
-            
-        SmallVector<Operation *, 4> copyOps;
-        for (auto nest : copyNests)
-            // With a post order walk, the erasure of loops does not affect
-            // continuation of the walk or the collection of load/store ops.
-            nest->walk([&](Operation *op) {
-            if (auto forOp = dyn_cast<AffineForOp>(op))
-                promoteIfSingleIteration(forOp);
-            else if (auto loadOp = dyn_cast<AffineLoadOp>(op))
-                copyOps.push_back(loadOp);
-            else if (auto storeOp = dyn_cast<AffineStoreOp>(op))
-                copyOps.push_back(storeOp);
-            });
-
-        for (auto i : copyOps) 
-            dbgs()<< "copyOps" << *i  << '\n';
-
         
     }
 
