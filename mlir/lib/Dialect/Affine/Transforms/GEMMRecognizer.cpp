@@ -27,9 +27,13 @@
 #include "mlir/Transforms/Utils.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
+#include "mlir/Dialect/SCF/EDSC/Builders.h"
+#include "mlir/Dialect/StandardOps/EDSC/Intrinsics.h"
 
 using namespace mlir;
 using namespace std;
+using namespace mlir::edsc;
+using namespace mlir::edsc::intrinsics;
 
 using llvm::dbgs;
 #define DEBUG_TYPE "affine-gemm-recognizer"
@@ -53,6 +57,9 @@ struct GEMMOperand {
 	Value CMemRef;
 	Value AMemRef;
 	Value BMemRef;
+	AffineLoadOp ALoadOp;
+	AffineLoadOp BLoadOp;
+	AffineStoreOp CStoreOp;
 };
 typedef struct GEMMOperand GEMMOperand;
 
@@ -312,6 +319,29 @@ GEMMOperand isAGEMMLoopNest(AffineForOp forOp1) {
 	return gemmOperand;
 }
 
+void createSubViewOp(OpBuilder &bIn, Location locIn, AffineForOp foOp, Value memRef,
+	int64_t size1, int64_t size2) {
+	ScopedContext scope(bIn, locIn);
+	auto &b = ScopedContext::getBuilderRef();
+	auto loc = ScopedContext::getLocation();
+
+	SmallVector<Value, 4> offsets, sizes, strides;
+
+	sizes.push_back(std_constant_index(size1));
+	sizes.push_back(std_constant_index(size2));
+
+	offsets.push_back(std_constant_index(0));
+	offsets.push_back(std_constant_index(0));
+
+	strides.push_back(std_constant_index(1));
+	strides.push_back(std_constant_index(1));
+
+	auto subView = b.create<SubViewOp>(loc, memRef, offsets, sizes, strides);
+	auto elementType = b.getF32Type();
+	auto unrankedType = UnrankedMemRefType::get(elementType, /*memorySpace*/ 0);
+	auto unRankedMemRef = b.create<MemRefCastOp>(loc, subView, unrankedType);
+}
+
 void GEMMRecognizer::runOnFunction() {
 	LLVM_DEBUG(dbgs() << "Running the GEMM recognizer pass \n");
 
@@ -337,6 +367,9 @@ void GEMMRecognizer::runOnFunction() {
 			//TODO: Get the actual data type of the tensors gemmOperand.CMemRef
 			auto elementType = b.getF32Type();
 			auto unrankedType = UnrankedMemRefType::get(elementType, /*memorySpace*/ 0);
+
+			createSubViewOp(b, forOp.getLoc(), forOp,
+				gemmOperand.AMemRef, gemmOperand.M, gemmOperand.K);
 
 			auto AMemRef = b.create<MemRefCastOp>(forOp.getLoc(),
 				gemmOperand.AMemRef,
