@@ -132,7 +132,10 @@ void PolyDLPass::generateFuncCopies(FuncOp f, SmallVector<unsigned, 6> tileSizes
                                        /*fastMemCapacityBytes=*/32 * 1024 * 1024UL};
         DenseSet<Operation *> copyNests;
 
-        affineDataCopyGenerate(loopNest, copyOptions, store.getMemRef(), copyNests);
+        if(store)
+            affineDataCopyGenerate(loopNest, copyOptions, store.getMemRef(), copyNests);
+        for (auto i : tiledNest) 
+            dbgs()<< "tiledNest" << *i  << '\n';
         
     }
 
