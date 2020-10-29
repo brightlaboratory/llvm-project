@@ -60,6 +60,7 @@ struct GEMMOperand {
 	AffineLoadOp ALoadOp;
 	AffineLoadOp BLoadOp;
 	AffineStoreOp CStoreOp;
+	AffineForOp MForOp, NForOp, KForOp;
 };
 typedef struct GEMMOperand GEMMOperand;
 
@@ -185,6 +186,7 @@ GEMMOperand isAGEMMLoopNest(AffineForOp forOp1) {
 													<< storeOp.getMemRef());
 												Value memRef = storeOp.getMemRef();
 												gemmOperand.CMemRef = memRef;
+												gemmOperand.CStoreOp = storeOp;
 												numStores++;
 												ValueRange mapOperands = storeOp.getMapOperands();
 
@@ -286,25 +288,35 @@ GEMMOperand isAGEMMLoopNest(AffineForOp forOp1) {
 											// Let's find A[M][K]
 											if (doArrayIndexesMatch(MForOp, KForOp, loadOp1)) {
 												gemmOperand.AMemRef = loadOp1.getMemRef();
+												gemmOperand.ALoadOp = loadOp1;
+
 											}
 											else if (doArrayIndexesMatch(MForOp, KForOp, loadOp2)) {
 												gemmOperand.AMemRef = loadOp2.getMemRef();
+												gemmOperand.ALoadOp = loadOp2;
 											}
 											else if (doArrayIndexesMatch(MForOp, KForOp, loadOp3)) {
 												gemmOperand.AMemRef = loadOp3.getMemRef();
+												gemmOperand.ALoadOp = loadOp3;
 											}
 
 											// Let's find B[K][N]
 											if (doArrayIndexesMatch(KForOp, NForOp, loadOp1)) {
 												gemmOperand.BMemRef = loadOp1.getMemRef();
+												gemmOperand.BLoadOp = loadOp1;
 											}
 											else if (doArrayIndexesMatch(KForOp, NForOp, loadOp2)) {
 												gemmOperand.BMemRef = loadOp2.getMemRef();
+												gemmOperand.BLoadOp = loadOp2;
 											}
 											else if (doArrayIndexesMatch(KForOp, NForOp, loadOp3)) {
 												gemmOperand.BMemRef = loadOp3.getMemRef();
+												gemmOperand.BLoadOp = loadOp3;
 											}
 
+											gemmOperand.MForOp = MForOp;
+											gemmOperand.NForOp = NForOp;
+											gemmOperand.KForOp = KForOp;
 											return gemmOperand;
 										}
 									}
@@ -319,19 +331,29 @@ GEMMOperand isAGEMMLoopNest(AffineForOp forOp1) {
 	return gemmOperand;
 }
 
-void createSubViewOp(OpBuilder &bIn, Location locIn, AffineForOp foOp, Value memRef,
-	int64_t size1, int64_t size2) {
+void createSubViewOp(OpBuilder &bIn, Location locIn, Value memRef,
+	int64_t size1, int64_t size2, AffineLoadOp loadOp,
+	AffineForOp forOp1, AffineForOp forOp2) {
 	ScopedContext scope(bIn, locIn);
 	auto &b = ScopedContext::getBuilderRef();
 	auto loc = ScopedContext::getLocation();
+
+	auto arrayIndex1 = b.create<AffineApplyOp>(loc,
+		forOp1.getLowerBoundMap(),
+		forOp1.getLowerBoundOperands());
+	auto arrayIndex2 = b.create<AffineApplyOp>(loc,
+		forOp2.getLowerBoundMap(),
+		forOp2.getLowerBoundOperands());
+	LLVM_DEBUG(dbgs() << "arrayIndex1: " << arrayIndex1);
+	LLVM_DEBUG(dbgs() << "arrayIndex2: " << arrayIndex2);
 
 	SmallVector<Value, 4> offsets, sizes, strides;
 
 	sizes.push_back(std_constant_index(size1));
 	sizes.push_back(std_constant_index(size2));
 
-	offsets.push_back(std_constant_index(0));
-	offsets.push_back(std_constant_index(0));
+	offsets.push_back(arrayIndex1);
+	offsets.push_back(arrayIndex2);
 
 	strides.push_back(std_constant_index(1));
 	strides.push_back(std_constant_index(1));
@@ -340,6 +362,7 @@ void createSubViewOp(OpBuilder &bIn, Location locIn, AffineForOp foOp, Value mem
 	auto elementType = b.getF32Type();
 	auto unrankedType = UnrankedMemRefType::get(elementType, /*memorySpace*/ 0);
 	auto unRankedMemRef = b.create<MemRefCastOp>(loc, subView, unrankedType);
+
 }
 
 void GEMMRecognizer::runOnFunction() {
@@ -368,8 +391,9 @@ void GEMMRecognizer::runOnFunction() {
 			auto elementType = b.getF32Type();
 			auto unrankedType = UnrankedMemRefType::get(elementType, /*memorySpace*/ 0);
 
-			createSubViewOp(b, forOp.getLoc(), forOp,
-				gemmOperand.AMemRef, gemmOperand.M, gemmOperand.K);
+			createSubViewOp(b, forOp.getLoc(),
+				gemmOperand.AMemRef, gemmOperand.M, gemmOperand.K, gemmOperand.ALoadOp,
+				gemmOperand.MForOp, gemmOperand.KForOp);
 
 			auto AMemRef = b.create<MemRefCastOp>(forOp.getLoc(),
 				gemmOperand.AMemRef,
