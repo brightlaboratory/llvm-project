@@ -34,7 +34,7 @@ namespace {
 
 	struct PolyDLPass : public PolyDLPassBase<PolyDLPass> {
 		PolyDLPass() = default;
-		void runOnFunction() override;
+        void runOnFunction() override;
         void generateFuncCopies(FuncOp f, SmallVector<unsigned, 6> tileSizes, SmallVector<unsigned, 4> permMap);
 	};
 
@@ -50,8 +50,7 @@ void generatePermutationMaps(unsigned a[], int n,std::vector<SmallVector<unsigne
 { 
     SmallVector<unsigned, 4> permMap;
   
-    // Find all possible permutations 
-    dbgs() << "Possible permutations are:\n"; 
+    // Find all possible permutations  
     do { 
 
         for (int i = 0; i < n; i++)
@@ -82,6 +81,60 @@ void generateTileSizes(int p, int n,std::vector<int> lowerBound,std::vector<int>
     } 
 }
 
+void statsWorkingSetSizes(std::vector<long int> bandFootprints) {
+
+    // Stats generation of working set size
+    long int L1CacheSize=32768, L2CacheSize=1048576, L3CacheSize= 1441792,
+    L1_WSS=0, L2_WSS=0, L3_WSS=0, Mem_WSS=0;
+    bool Done;
+    for (auto it = bandFootprints.rbegin(); it != bandFootprints.rend(); ++it)
+    {
+        Done = true;
+        long int itVal = *it;
+        // dbgs() << " bandFootprints: " << itVal << "\n";
+        if(itVal < L1CacheSize && L1CacheSize>0 && Done){
+            Done = false;
+            L1CacheSize -= itVal;
+            L1_WSS += itVal;
+        }else if(itVal < L2CacheSize && L2CacheSize>0 && Done){
+            Done = false;
+            L2CacheSize -= itVal;
+            L2_WSS += itVal;
+        }else if(itVal < L3CacheSize && L3CacheSize>0 && Done){
+            Done = false;
+            L3CacheSize -= itVal;
+            L3_WSS += itVal;
+        }else{
+            Mem_WSS += itVal;
+        }
+    }
+
+    // Testing/Printing Working set sizes
+    dbgs()<< "L1_WSS "<< L1_WSS << "\n";
+    dbgs()<< "L2_WSS "<< L2_WSS << "\n"; 
+    dbgs()<< "L3_WSS "<< L3_WSS << "\n"; 
+    dbgs()<< "Mem_WSS "<< Mem_WSS << "\n"; 
+    
+}
+
+void computeWorkingSetSizes(ArrayRef<AffineForOp> band) {
+    LLVM_DEBUG(dbgs() << "In computeWorkingSetSizes()\n ");
+
+   std::vector<long int> bandFootprints;   
+   for(unsigned i = 0, e = band.size(); i < e; i++) {
+        auto fp = getMemoryFootprintBytes(band[i], 0);
+        if (fp) {
+            dbgs() << " Functions Size: " << fp.getValue() << "\n";
+            bandFootprints.push_back(fp.getValue());
+        } else {
+            dbgs() << " fp is NULL \n";
+        }
+    }
+
+    statsWorkingSetSizes(bandFootprints);
+}
+
+
 void PolyDLPass::generateFuncCopies(FuncOp f, SmallVector<unsigned, 6> tileSizes, SmallVector<unsigned, 4> permMap){
     
     std::vector<SmallVector<AffineForOp, 6>> bands;
@@ -98,45 +151,50 @@ void PolyDLPass::generateFuncCopies(FuncOp f, SmallVector<unsigned, 6> tileSizes
                 break;
             index++;
         } 
+        for(auto i : band)
+            dbgs()<< "band" << i << "\n";
 
-        permuteLoops(band, permMap);
+        dbgs() << "band size " << band.size() <<"\n";
+        if (band.size() == permMap.size() && band.size() == tileSizes.size()){
 
-        if(auto temp =  dyn_cast<AffineForOp>(*band[index]))
-            getPerfectlyNestedLoops(nest, temp);
+            permuteLoops(band, permMap);
 
-        SmallVector<AffineForOp, 6> tiledNest;
-        if (failed(tilePerfectlyNested(nest, tileSizes, &tiledNest)))
-        return signalPassFailure();
+            if(auto temp =  dyn_cast<AffineForOp>(*band[index]))
+                getPerfectlyNestedLoops(nest, temp);
 
-        for (auto i : tiledNest) 
-            dbgs()<< "tiledNest" << *i  << '\n'; 
+            SmallVector<AffineForOp, 6> tiledNest;
+            if (failed(tilePerfectlyNested(nest, tileSizes, &tiledNest)))
+            return signalPassFailure();
 
-        unsigned innermostLoopIdx = tiledNest.size() -1;
+            for (auto i : tiledNest) 
+                dbgs()<< "tiledNest" << *i  << '\n'; 
 
-        auto innermostLoop = tiledNest[innermostLoopIdx];
-        dbgs()<< "innermostLoop" <<  innermostLoop << '\n';
-        auto loopNest = tiledNest[loopNestIdx];
+            unsigned innermostLoopIdx = tiledNest.size() -1;
 
-        AffineStoreOp store;
-        for (auto &op : *innermostLoop.getBody()) {
-          if (auto ld = dyn_cast<AffineStoreOp>(op)) {
-            store = ld;
-            break;
-          }
-        }
+            auto innermostLoop = tiledNest[innermostLoopIdx];
+            dbgs()<< "innermostLoop" <<  innermostLoop << '\n';
+            auto loopNest = tiledNest[loopNestIdx];
 
-        AffineCopyOptions copyOptions = {/*generateDma=*/false,
-                                       /*slowMemorySpace=*/0,
-                                       /*fastMemorySpace=*/0,
-                                       /*tagMemorySpace=*/0,
-                                       /*fastMemCapacityBytes=*/32 * 1024 * 1024UL};
-        DenseSet<Operation *> copyNests;
+            AffineStoreOp store;
+            for (auto &op : *innermostLoop.getBody()) {
+            if (auto ld = dyn_cast<AffineStoreOp>(op)) {
+                store = ld;
+                break;
+            }
+            }
 
-        if(store)
-            affineDataCopyGenerate(loopNest, copyOptions, store.getMemRef(), copyNests);
-        for (auto i : tiledNest) 
-            dbgs()<< "tiledNest" << *i  << '\n';
-        
+            AffineCopyOptions copyOptions = {/*generateDma=*/false,
+                                        /*slowMemorySpace=*/0,
+                                        /*fastMemorySpace=*/0,
+                                        /*tagMemorySpace=*/0,
+                                        /*fastMemCapacityBytes=*/32 * 1024 * 1024UL};
+            DenseSet<Operation *> copyNests;
+
+            if(store)
+                affineDataCopyGenerate(loopNest, copyOptions, store.getMemRef(), copyNests);
+
+            computeWorkingSetSizes(tiledNest);   
+        }     
     }
 
 }
@@ -152,7 +210,7 @@ void PolyDLPass::runOnFunction() {
     getTileableBands(f, &bands);
 
     for (auto &band : bands) {
-        
+
         int bandSize = band.size();
 
         MutableArrayRef<AffineForOp> origLoops = band;
@@ -179,25 +237,22 @@ void PolyDLPass::runOnFunction() {
             permMapInitial[i] = i;
         generatePermutationMaps(permMapInitial, bandSize, permMapOut); 
         
-        for (auto &permMap : permMapOut){
-            for (unsigned p = 0; p < tileSizeOut.size(); p++) { 
-                generateFuncCopies(f.clone(),tileSizeOut[p],permMap);
-            }
+        if (!explicit_tileSizes.empty() && !explicit_pmaps.empty()){
+            SmallVector<unsigned, 6> Ex_tileSizes;
+            SmallVector<unsigned, 4> Ex_permMap;
+            
+            for(auto i : explicit_tileSizes)
+                Ex_tileSizes.push_back(i);
+            for(auto i : explicit_pmaps)
+                Ex_permMap.push_back(i);
+                
+            generateFuncCopies(f,Ex_tileSizes,Ex_permMap);
+
+        }else{
+            for (auto &permMap : permMapOut)
+                for (unsigned p = 0; p < tileSizeOut.size(); p++) 
+                    generateFuncCopies(f.clone(),tileSizeOut[p],permMap);
         }
-
-
-        // SmallVector<unsigned, 4> permMap{1,2,0};
-
-        // for (unsigned p = 0; p < tileSizeOut.size(); p++) { 
-        //     generateFuncCopies(f.clone(),tileSizeOut[p],permMap);
-        //     dbgs()<<"Completed for "<<p<<"\n";
-        // }
-
-        // for (int i = 0; i < tileSizeOut.size(); i++) { 
-        //     for (int j = 0; j < tileSizeOut[i].size(); j++) 
-        //         dbgs() << tileSizeOut[i][j] << " "; 
-        //     dbgs() << "\n"; 
-        // }  
 
     }
 

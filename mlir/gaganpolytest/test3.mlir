@@ -30,7 +30,19 @@ func @main() {
   %f1 = muli %M, %N : index
   %f2 = muli %f1, %K : index
 
+  %t_start = call @rtclock() : () -> f64
   call @sgemm_naive(%A, %B, %C) : (memref<2048x2048xf32>, memref<2048x2048xf32>, memref<2048x2048xf32>) -> ()
+  %t_end = call @rtclock() : () -> f64
+  %t = subf %t_end, %t_start : f64
+
+// 2*M*N*K.
+  %c2 = constant 2 : index
+  %f3 = muli %c2, %f2 : index
+  %num_flops = muli %reps, %f3 : index
+  %num_flops_i = index_cast %num_flops : index to i64
+  %num_flops_f = sitofp %num_flops_i : i64 to f64
+  %flops = divf %num_flops_f, %t : f64
+  call @print_flops(%flops) : (f64) -> ()
 
   return
 }
@@ -53,5 +65,7 @@ func @sgemm_naive(%arg0: memref<2048x2048xf32>, %arg1: memref<2048x2048xf32>, %a
   return
 }
 
+func @print_flops(f64)
+func @rtclock() -> f64
 func @printF32(f32)
 func @printComma()

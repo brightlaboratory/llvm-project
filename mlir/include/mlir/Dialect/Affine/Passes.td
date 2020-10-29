@@ -69,6 +69,20 @@ def PolyDLPass
     : FunctionPass<"affine-polydl"> {
   let summary = "Create Different Tile sized codes using Loop Tiling Pass";
   let constructor = "mlir::createPolyDLPassPass()";
+  let options = [
+       Option<"explicit_tileSize", "tile-size", "unsigned", /*default=*/"",
+              "Use this tile size for all loops">,
+       Option<"explicit_pmap", "pMap", "unsigned", /*default=*/"",
+              "List of Permutation maps">,
+       ListOption<"explicit_tileSizes", "tile-sizes", "unsigned",
+              "List of tile sizes for each perfect nest "
+              "(overridden by -tile-size)",
+              "llvm::cl::ZeroOrMore">,
+       ListOption<"explicit_pmaps", "pMaps", "unsigned",
+              "List of Permutation maps "
+              "(overridden by -pMaps)",
+              "llvm::cl::ZeroOrMore">           
+  ];
 }
 
 def AffineLoopUnroll : FunctionPass<"affine-loop-unroll"> {

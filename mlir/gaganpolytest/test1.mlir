@@ -31,6 +31,7 @@ func @main() {
   %f2 = muli %f1, %K : index
 
   call @sgemm_naive(%A, %B, %C) : (memref<2048x2048xf32>, memref<2048x2048xf32>, memref<2048x2048xf32>) -> ()
+  call @print_sgemm_naive(%A, %B, %C) : (memref<2048x2048xf32>, memref<2048x2048xf32>, memref<2048x2048xf32>) -> ()
 
   return
 }
@@ -48,6 +49,18 @@ func @sgemm_naive(%arg0: memref<2048x2048xf32>, %arg1: memref<2048x2048xf32>, %a
         %7 = addf %6, %5 : f32
         affine.store %7, %arg2[%arg3, %arg4] : memref<2048x2048xf32>
       }
+    }
+  }
+  return
+}
+
+func @print_sgemm_naive(%arg0: memref<2048x2048xf32>, %arg1: memref<2048x2048xf32>, %arg2: memref<2048x2048xf32>) {
+  %c0 = constant 0 : index
+  affine.for %arg3 = 0 to 2048 {
+    affine.for %arg4 = 0 to 2048 {
+        %10 = affine.load %arg2[%arg3, %arg4] : memref<2048x2048xf32>
+        call @printF32(%10): (f32) -> ()
+        call @printComma(): () -> ()
     }
   }
   return
