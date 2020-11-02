@@ -331,8 +331,8 @@ GEMMOperand isAGEMMLoopNest(AffineForOp forOp1) {
 	return gemmOperand;
 }
 
-void createSubViewOp(OpBuilder &bIn, Location locIn, Value memRef,
-	int64_t size1, int64_t size2, AffineLoadOp loadOp,
+MemRefCastOp createSubViewOp(OpBuilder &bIn, Location locIn, Value memRef,
+	int64_t size1, int64_t size2,
 	AffineForOp forOp1, AffineForOp forOp2) {
 	ScopedContext scope(bIn, locIn);
 	auto &b = ScopedContext::getBuilderRef();
@@ -362,7 +362,7 @@ void createSubViewOp(OpBuilder &bIn, Location locIn, Value memRef,
 	auto elementType = b.getF32Type();
 	auto unrankedType = UnrankedMemRefType::get(elementType, /*memorySpace*/ 0);
 	auto unRankedMemRef = b.create<MemRefCastOp>(loc, subView, unrankedType);
-
+	return unRankedMemRef;
 }
 
 void GEMMRecognizer::runOnFunction() {
@@ -380,36 +380,25 @@ void GEMMRecognizer::runOnFunction() {
 			// Now we want to call a matrix multiplication routine here.
 			OpBuilder b(forOp);
 
-			/*
-			SmallVector<Value, 6> ops;
-			ops.push_back(gemmOperand.CMemRef);
-			ops.push_back(gemmOperand.CMemRef);
-			ops.push_back(gemmOperand.CMemRef);
-			*/
-
 			//TODO: Get the actual data type of the tensors gemmOperand.CMemRef
 			auto elementType = b.getF32Type();
 			auto unrankedType = UnrankedMemRefType::get(elementType, /*memorySpace*/ 0);
 
-			createSubViewOp(b, forOp.getLoc(),
-				gemmOperand.AMemRef, gemmOperand.M, gemmOperand.K, gemmOperand.ALoadOp,
+			MemRefCastOp ASubView = createSubViewOp(b, forOp.getLoc(),
+				gemmOperand.AMemRef, gemmOperand.M, gemmOperand.K,
 				gemmOperand.MForOp, gemmOperand.KForOp);
 
-			auto AMemRef = b.create<MemRefCastOp>(forOp.getLoc(),
-				gemmOperand.AMemRef,
-				unrankedType);
+			MemRefCastOp BSubView = createSubViewOp(b, forOp.getLoc(),
+				gemmOperand.BMemRef, gemmOperand.K, gemmOperand.N,
+				gemmOperand.KForOp, gemmOperand.NForOp);
 
-			auto BMemRef = b.create<MemRefCastOp>(forOp.getLoc(),
-				gemmOperand.BMemRef,
-				unrankedType);
-
-			auto CMemRef = b.create<MemRefCastOp>(forOp.getLoc(),
-				gemmOperand.CMemRef,
-				unrankedType);
+			MemRefCastOp CSubView = createSubViewOp(b, forOp.getLoc(),
+				gemmOperand.CMemRef, gemmOperand.M, gemmOperand.N,
+				gemmOperand.MForOp, gemmOperand.NForOp);
 
 			auto op = b.create<PolyDLGEMMOp>(
-				forOp.getLoc(), AMemRef, BMemRef,
-				CMemRef, gemmOperand.M, gemmOperand.N, gemmOperand.K);
+				forOp.getLoc(), ASubView, BSubView,
+				CSubView, gemmOperand.M, gemmOperand.N, gemmOperand.K);
 
 			LLVM_DEBUG(dbgs() << "CallOp: " << op);
 			forOp.erase();
