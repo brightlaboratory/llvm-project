@@ -74,6 +74,8 @@ def PolyDLPass
               "Use this tile size for all loops">,
        Option<"explicit_pmap", "pMap", "unsigned", /*default=*/"",
               "List of Permutation maps">,
+       Option<"explicit_cacheSize", "cacheSize", "unsigned", /*default=*/"",
+              "List of Cache Sizes">,
        ListOption<"explicit_tileSizes", "tile-sizes", "unsigned",
               "List of tile sizes for each perfect nest "
               "(overridden by -tile-size)",
@@ -81,7 +83,11 @@ def PolyDLPass
        ListOption<"explicit_pmaps", "pMaps", "unsigned",
               "List of Permutation maps "
               "(overridden by -pMaps)",
-              "llvm::cl::ZeroOrMore">           
+              "llvm::cl::ZeroOrMore">,
+       ListOption<"explicit_cacheSizes", "cacheSizes", "unsigned",
+              "List of L1 L2 L3 Cache Sizes "
+              "(overridden by -cacheSizes)",
+              "llvm::cl::ZeroOrMore">,           
   ];
 }
 

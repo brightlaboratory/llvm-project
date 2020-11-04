@@ -36,6 +36,8 @@ namespace {
 		PolyDLPass() = default;
         void runOnFunction() override;
         void generateFuncCopies(FuncOp f, SmallVector<unsigned, 6> tileSizes, SmallVector<unsigned, 4> permMap);
+        void statsWorkingSetSizes(std::vector<long int> bandFootprints);
+        void computeWorkingSetSizes(ArrayRef<AffineForOp> band);
 	};
 
 } // end anonymous namespace
@@ -81,11 +83,31 @@ void generateTileSizes(int p, int n,std::vector<int> lowerBound,std::vector<int>
     } 
 }
 
-void statsWorkingSetSizes(std::vector<long int> bandFootprints) {
-
+void PolyDLPass::statsWorkingSetSizes(std::vector<long int> bandFootprints) {
+    
+    long int L1CacheSize,L2CacheSize,L3CacheSize;
     // Stats generation of working set size
-    long int L1CacheSize=32768, L2CacheSize=1048576, L3CacheSize= 1441792,
-    L1_WSS=0, L2_WSS=0, L3_WSS=0, Mem_WSS=0;
+    if(explicit_cacheSize)
+        dbgs()<<"explicit_cacheSize "<<explicit_cacheSize;
+    
+    if (!explicit_cacheSizes.empty() && explicit_cacheSizes.size()==3){
+        SmallVector<unsigned, 4> Ex_cacheSize;        
+        for(auto i : explicit_cacheSizes)
+            Ex_cacheSize.push_back(i);
+        dbgs()<<"Cache Size "<< Ex_cacheSize[0] <<"\n" ;
+        dbgs()<<"Cache Size "<< Ex_cacheSize[1] <<"\n" ;
+        dbgs()<<"Cache Size "<< Ex_cacheSize[2] <<"\n" ;
+        L1CacheSize= Ex_cacheSize[0];
+        L2CacheSize= Ex_cacheSize[1];
+        L3CacheSize= Ex_cacheSize[2];
+
+    }else
+    {
+        L1CacheSize=32768, L2CacheSize=1048576, L3CacheSize= 1441792;
+    }
+    
+
+    long int L1_WSS=0, L2_WSS=0, L3_WSS=0, Mem_WSS=0;
     bool Done;
     for (auto it = bandFootprints.rbegin(); it != bandFootprints.rend(); ++it)
     {
@@ -117,7 +139,7 @@ void statsWorkingSetSizes(std::vector<long int> bandFootprints) {
     
 }
 
-void computeWorkingSetSizes(ArrayRef<AffineForOp> band) {
+void PolyDLPass::computeWorkingSetSizes(ArrayRef<AffineForOp> band) {
     LLVM_DEBUG(dbgs() << "In computeWorkingSetSizes()\n ");
 
    std::vector<long int> bandFootprints;   
