@@ -1,4 +1,8 @@
 #include <stdio.h>
+#include <immintrin.h>
+
+
+
 void print_f32_polydl(
 	long long int rank, long long int offset,
 	long long int size1, long long int size2,
@@ -16,6 +20,7 @@ void print_f32_polydl(
 
 }
 
+#ifndef USE_AVX512
 void polydl_lib_matmul_f32(
 	long long int M, long long int N, long long int K,
 	long long int A_stride, long long int B_stride, long long int C_stride,
@@ -35,3 +40,39 @@ void polydl_lib_matmul_f32(
 		}
 	}
 }
+#endif
+
+#ifdef USE_AVX512
+void polydl_lib_matmul_f32(
+	long long int M, long long int N, long long int K,
+	long long int A_stride, long long int B_stride, long long int C_stride,
+	float *A, float *B, float *C) {
+
+	__m512 vec_C = _mm512_setzero_ps();
+	__m512 vec_A = _mm512_setzero_ps();
+	__m512 vec_B = _mm512_setzero_ps();
+
+
+	int i, j, k;
+	for (i = 0; i < M; i++) {
+		for (k = 0; k < K; k++) {
+			vec_A = _mm512_set1_ps(A[i*A_stride + k]);
+
+			for (j = 0; j < N; j += 16) {
+
+				/* Equivalent to:
+				C[i][j] += A[i][k]* B[k][j];
+				C[i][j+1] += A[i][k]* B[k][j+1];
+				C[i][j+2] += A[i][k]* B[k][j+2];
+				...*/
+
+				vec_B = _mm512_load_ps((__m512*)&B[k*B_stride + j]);
+
+				vec_C = _mm512_load_ps((__m512*)&C[i*C_stride + j]);
+				vec_C = _mm512_add_ps(vec_C, _mm512_mul_ps(vec_A, vec_B));
+				_mm512_store_ps((__m512*)&C[i*C_stride + j], vec_C);
+			}
+		}
+	}
+}
+#endif
