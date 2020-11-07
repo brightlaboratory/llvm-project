@@ -158,4 +158,9 @@ def SimplifyAffineStructures : FunctionPass<"simplify-affine-structures"> {
   let constructor = "mlir::createSimplifyAffineStructuresPass()";
 }
 
+def GEMMRecognizer : FunctionPass<"affine-gemm-recognizer"> {
+  let summary = "Recognize GEneral Matrix Multiplication (GEMM) operations";
+  let constructor = "mlir::createGEMMRecognizerPass()";
+}
+
 #endif // MLIR_DIALECT_AFFINE_PASSES

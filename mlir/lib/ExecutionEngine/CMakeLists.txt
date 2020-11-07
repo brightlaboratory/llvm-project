@@ -83,6 +83,8 @@ add_mlir_library(mlir_c_runner_utils_static
 set_property(TARGET mlir_c_runner_utils_static PROPERTY CXX_STANDARD 11)
 target_compile_definitions(mlir_c_runner_utils PRIVATE mlir_c_runner_utils_EXPORTS)
 
+find_library(POLYDL_RT_PATH polydl_rt)
+
 add_mlir_library(mlir_runner_utils
   SHARED
   RunnerUtils.cpp
@@ -91,5 +93,6 @@ add_mlir_library(mlir_runner_utils
 
   LINK_LIBS PUBLIC
   mlir_c_runner_utils_static
+  ${POLYDL_RT_PATH}
 )
 target_compile_definitions(mlir_runner_utils PRIVATE mlir_runner_utils_EXPORTS)

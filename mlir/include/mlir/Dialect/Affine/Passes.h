@@ -60,6 +60,7 @@ createLoopTilingPass(uint64_t cacheSizeBytes);
 /// Overload relying on pass options for initialization.
 std::unique_ptr<OperationPass<FuncOp>> createLoopTilingPass();
 std::unique_ptr<OperationPass<FuncOp>> createPolyDLPassPass();
+std::unique_ptr<OperationPass<FuncOp>> createGEMMRecognizerPass();
 
 /// Creates a loop unrolling pass with the provided parameters.
 /// 'getUnrollFactor' is a function callback for clients to supply a function

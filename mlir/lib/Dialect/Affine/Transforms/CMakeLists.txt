@@ -6,6 +6,7 @@ add_mlir_dialect_library(MLIRAffineTransforms
   LoopTiling.cpp
   PolyDLPass.cpp
   LoopUnroll.cpp
+  GEMMRecognizer.cpp
   LoopUnrollAndJam.cpp
   SuperVectorize.cpp
   SimplifyAffineStructures.cpp
