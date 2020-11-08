@@ -93,6 +93,6 @@ add_mlir_library(mlir_runner_utils
 
   LINK_LIBS PUBLIC
   mlir_c_runner_utils_static
-  ${POLYDL_RT_PATH}
+  polydl_rt
 )
 target_compile_definitions(mlir_runner_utils PRIVATE mlir_runner_utils_EXPORTS)
