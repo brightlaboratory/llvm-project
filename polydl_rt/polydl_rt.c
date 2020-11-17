@@ -29,6 +29,7 @@ void polydl_lib_matmul_f32(
 	printf("In polydl_lib_matmul_f32 function\n");
 	printf("M = %ld, N = %ld, K = %ld, A_stride = %ld, B_stride = %ld, C_stride = %ld\n",
 		M, N, K, A_stride, B_stride, C_stride);
+	printf("A = %f, B = %f \n", A[0],B[0]);
 
 	int i, j, k;
 	for (i = 0; i < M; i++) {

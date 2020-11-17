@@ -69,3 +69,4 @@ func @print_flops(f64)
 func @rtclock() -> f64
 func @printF32(f32)
 func @printComma()
+func @polydl_matmul_f32(memref<*xf32>, memref<*xf32>, memref<*xf32>, index, index, index)

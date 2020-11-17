@@ -30,7 +30,7 @@ module {
     %4 = call @rtclock() : () -> f64
     %5 = subf %4, %3 : f64
     %6 = memref_cast %2 : memref<2048x2048xf32> to memref<*xf32>
-    call @print_memref_f32(%6) : (memref<*xf32>) -> ()
+   // call @print_memref_f32(%6) : (memref<*xf32>) -> ()
     %7 = dim %2, %c0 : memref<2048x2048xf32>
     %8 = dim %2, %c1 : memref<2048x2048xf32>
     %9 = dim %0, %c1 : memref<2048x2048xf32>
