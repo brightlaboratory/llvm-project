@@ -84,16 +84,33 @@ func @polydl_fill(%argAA: memref<2048x2048xf32>) {
 }
 
 func @sgemm_naive(%arg0: memref<2048x2048xf32>, %arg1: memref<2048x2048xf32>, %arg2: memref<2048x2048xf32>) {
-  %c0 = constant 0 : index
-  affine.for %arg3 = 0 to 2048 {
-    affine.for %arg4 = 0 to 2048 {
-      affine.for %arg5 = 0 to 2048 {
-        %3 = affine.load %arg0[%arg3, %arg5] : memref<2048x2048xf32>
-        %4 = affine.load %arg1[%arg5, %arg4] : memref<2048x2048xf32>
-        %5 = affine.load %arg2[%arg3, %arg4] : memref<2048x2048xf32>
-        %6 = mulf %3, %4 : f32
-        %7 = addf %6, %5 : f32
-        affine.store %7, %arg2[%arg3, %arg4] : memref<2048x2048xf32>
+   affine.for %arg3 = 0 to 2048 step 32 {	  %c0 = constant 0 : index
+      affine.for %arg4 = 0 to 2048 step 64 {	  affine.for %arg3 = 0 to 2048 {
+        affine.for %arg5 = 0 to 2048 step 16 {	    affine.for %arg4 = 0 to 2048 {
+          %ar4 = index_cast %arg3 : index to i32	      affine.for %arg5 = 0 to 2048 {
+          %ar5 = sitofp %ar4 : i32 to f32	        %3 = affine.load %arg0[%arg3, %arg5] : memref<2048x2048xf32>
+      call @printF32(%ar5): (f32) -> ()	        %4 = affine.load %arg1[%arg5, %arg4] : memref<2048x2048xf32>
+      call @printComma() : () -> ()	        %5 = affine.load %arg2[%arg3, %arg4] : memref<2048x2048xf32>
+          %ar6 = index_cast %arg4 : index to i32	        %6 = mulf %3, %4 : f32
+          %ar7 = sitofp %ar6 : i32 to f32	        %7 = addf %6, %5 : f32
+      call @printF32(%ar7): (f32) -> ()	        affine.store %7, %arg2[%arg3, %arg4] : memref<2048x2048xf32>
+      call @printComma() : () -> ()	
+          %ar8 = index_cast %arg5 : index to i32	
+          %ar9 = sitofp %ar8 : i32 to f32	
+      call @printF32(%ar9): (f32) -> ()	
+      call @printComma() : () -> ()	
+          %M = constant 32 : index	
+          %N = constant 64 : index	
+          %K = constant 16 : index	
+          %stride = constant 2048 : index	
+          %c1 = constant 1 : index	
+          %arg0_subview = subview %arg0[%arg3, %arg5][32, 16][1, 1] : memref<2048x2048xf32> to memref<32x16xf32, offset: ?, strides: [2048, 1]>	
+          %arg1_subview = subview %arg1[%arg5, %arg4][16, 64][1, 1] : memref<2048x2048xf32> to memref<16x64xf32, offset: ?, strides: [2048, 1]>	
+          %arg2_subview = subview %arg2[%arg3, %arg4][32, 64][1, 1] : memref<2048x2048xf32> to memref<32x64xf32, offset: ?, strides: [2048, 1]>	
+          %0 = memref_cast %arg0_subview : memref<32x16xf32, offset: ?, strides: [2048, 1]> to memref<*xf32>	
+          %1 = memref_cast %arg1_subview : memref<16x64xf32, offset: ?, strides: [2048, 1]> to memref<*xf32>	
+          %2 = memref_cast %arg2_subview : memref<32x64xf32, offset: ?, strides: [2048, 1]> to memref<*xf32>	
+          call @polydl_matmul_f32( %0 , %1 , %2,%M,%N,%K) : (memref<*xf32>, memref<*xf32>, memref<*xf32>, index, index, index) -> ()
       }
     }
   }
