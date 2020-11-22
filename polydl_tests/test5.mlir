@@ -1,13 +1,11 @@
 
 // export LD_LIBRARY_PATH=${PWD}/../polydl_rt:$LD_LIBRARY_PATH
 
-// ../build/bin/mlir-opt  -convert-linalg-to-loops -affine-gemm-recognizer -lower-affine -convert-scf-to-std  test4.mlir > test4_intermediate.mlir
+// ../build/bin/mlir-opt  -convert-linalg-to-loops -affine-gemm-recognizer -lower-affine -convert-scf-to-std  test5.mlir > test5_intermediate.mlir
 
-// ../build/bin/mlir-opt  -convert-std-to-llvm test4_intermediate.mlir | ../build/bin/mlir-cpu-runner -O3 -e main -entry-point-result=void -shared-libs=../build/lib/libmlir_runner_utils.so,../build/lib/libmlir_c_runner_utils.so
+// ../build/bin/mlir-opt  -convert-std-to-llvm test5_intermediate.mlir | ../build/bin/mlir-cpu-runner -O3 -e main -entry-point-result=void -shared-libs=../build/lib/libmlir_runner_utils.so,../build/lib/libmlir_c_runner_utils.so
 
 func @main() {
-  %c5 = constant 5 : index
-
   %A = alloc() : memref<2048x2048xf32>
   %B = alloc() : memref<2048x2048xf32>
   %C = alloc() : memref<2048x2048xf32>
@@ -17,14 +15,11 @@ func @main() {
   %ci1 = constant 1 : index
   %ci2 = constant 2 : index
 
-  
-
-call @polydl_fill(%A) : (memref<2048x2048xf32>) -> ()
-call @polydl_fill(%B) : (memref<2048x2048xf32>) -> ()
-//  linalg.fill(%A, %cf1) : memref<2048x2048xf32>, f32
+ // linalg.fill(%A, %cf1) : memref<2048x2048xf32>, f32
 //  linalg.fill(%B, %cf1) : memref<2048x2048xf32>, f32
+  call @polydl_fill(%A) : (memref<2048x2048xf32>) -> ()
+call @polydl_fill(%B) : (memref<2048x2048xf32>) -> ()
   linalg.fill(%C, %cf1) : memref<2048x2048xf32>, f32
-
 
   %pA = memref_cast %A : memref<2048x2048xf32> to memref<*xf32>
   %pB = memref_cast %B : memref<2048x2048xf32> to memref<*xf32>
@@ -62,6 +57,23 @@ call @polydl_fill(%B) : (memref<2048x2048xf32>) -> ()
 }
 // CHECK: 2049, 2049, 2049,
 
+func @sgemm_naive(%arg0: memref<2048x2048xf32>, %arg1: memref<2048x2048xf32>, %arg2: memref<2048x2048xf32>) {
+  %c0 = constant 0 : index
+  affine.for %arg3 = 0 to 2048 {
+    affine.for %arg4 = 0 to 2048 {
+      affine.for %arg5 = 0 to 2048 {
+        %3 = affine.load %arg0[%arg3, %arg5] : memref<2048x2048xf32>
+        %4 = affine.load %arg1[%arg5, %arg4] : memref<2048x2048xf32>
+        %5 = affine.load %arg2[%arg3, %arg4] : memref<2048x2048xf32>
+        %6 = mulf %3, %4 : f32
+        %7 = addf %6, %5 : f32
+        affine.store %7, %arg2[%arg3, %arg4] : memref<2048x2048xf32>
+      }
+    }
+  }
+  return
+}
+
 func @polydl_fill(%argAA: memref<2048x2048xf32>) {
     %c0 = constant 0 : index
     %cf0 = constant 0.00000e+00 : f32
@@ -83,24 +95,6 @@ func @polydl_fill(%argAA: memref<2048x2048xf32>) {
     return
 }
 
-func @sgemm_naive(%arg0: memref<2048x2048xf32>, %arg1: memref<2048x2048xf32>, %arg2: memref<2048x2048xf32>) {
-  %c0 = constant 0 : index
-  affine.for %arg3 = 0 to 2048 {
-    affine.for %arg4 = 0 to 2048 {
-      affine.for %arg5 = 0 to 2048 {
-        %3 = affine.load %arg0[%arg3, %arg5] : memref<2048x2048xf32>
-        %4 = affine.load %arg1[%arg5, %arg4] : memref<2048x2048xf32>
-        %5 = affine.load %arg2[%arg3, %arg4] : memref<2048x2048xf32>
-        %6 = mulf %3, %4 : f32
-        %7 = addf %6, %5 : f32
-        affine.store %7, %arg2[%arg3, %arg4] : memref<2048x2048xf32>
-      }
-    }
-  }
-  return
-}
-
-func @printF32(f32)
 func @print_flops(f64)
 func @rtclock() -> f64
 func @print_memref_f32_polydl(memref<*xf32>)
@@ -108,4 +102,3 @@ func @print_memref_f32(memref<*xf32>)
 func @print_open()
 func @print_close() 
 func @polydl_matmul_f32(memref<*xf32>, memref<*xf32>, memref<*xf32>, index, index, index)
-func @printComma()
