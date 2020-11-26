@@ -48,10 +48,38 @@ void polydl_lib_matmul_f32(long long int M, long long int N, long long int K,
 	long long int A_stride, long long int B_stride, long long int C_stride,
 	float *A, float *B, float *C) {
 	// i_8_j_16_k_1 is empirically found to be the highest performing version
+
+	// i -> M, j -> N
 	polydl_lib_matmul_f32_i_8_j_16_k_1_fma(M, N, K,
 		A_stride, B_stride, C_stride, A, B, C);
+	/*
+	if (M > 8 && N > 16) {
+		polydl_lib_matmul_f32_naive(M, N, K,
+			A_stride, B_stride, C_stride, A, B, C);
+	}
+	else {
+		polydl_lib_matmul_f32_naive(M, N, K,
+			A_stride, B_stride, C_stride, A, B, C);
+	}
+
+	*/
 }
 
+void polydl_lib_matmul_f32_naive(
+	long long int M, long long int N, long long int K,
+	long long int A_stride, long long int B_stride, long long int C_stride,
+	float *A, float *B, float *C) {
+
+	int i, j, k;
+	for (i = 0; i < M; i++) {
+		for (j = 0; j < N; j++) {
+			for (k = 0; k < K; k++) {
+				C[i*C_stride + j] +=
+					A[i*A_stride + k] * B[k*B_stride + j];
+			}
+		}
+	}
+}
 
 void polydl_lib_matmul_f32_i_1_j_16_k_1(
 	long long int M, long long int N, long long int K,
@@ -205,9 +233,13 @@ void polydl_lib_matmul_f32_i_8_j_16_k_1_fma(
 	__m512 vec_C_1, vec_C_2, vec_C_3, vec_C_4, vec_C_5, vec_C_6, vec_C_7;
 	__m512 vec_A_1, vec_A_2, vec_A_3, vec_A_4, vec_A_5, vec_A_6, vec_A_7;
 
-	int i, j, k;
-	for (i = 0; i < M; i += 8) {
-		for (j = 0; j < N; j += 16) {
+	int i, j, k, i_aux;
+	long long M_full, N_full;
+	M_full = (M / 8) * 8;
+	N_full = (N / 16) * 16;
+	// printf("M_full = %d, N_full = %d\n", M_full, N_full);
+	for (i = 0; i < M_full; i += 8) {
+		for (j = 0; j < N_full; j += 16) {
 			vec_C = _mm512_load_ps((__m512*)&C[i*C_stride + j]);
 			vec_C_1 = _mm512_load_ps((__m512*)&C[(i + 1)*C_stride + j]);
 			vec_C_2 = _mm512_load_ps((__m512*)&C[(i + 2)*C_stride + j]);
@@ -249,6 +281,26 @@ void polydl_lib_matmul_f32_i_8_j_16_k_1_fma(
 			_mm512_store_ps((__m512*)&C[(i + 5)*C_stride + j], vec_C_5);
 			_mm512_store_ps((__m512*)&C[(i + 6)*C_stride + j], vec_C_6);
 			_mm512_store_ps((__m512*)&C[(i + 7)*C_stride + j], vec_C_7);
+		}
+
+		// Example: N = 18. j = 0, j = 16, j = 32. We have to start from 16. (N / 16) * 16 = 16
+		for (i_aux = i; i_aux < (i + 8); i_aux++) {
+			for (j = N_full; j < N; j++) {
+				for (k = 0; k < K; k++) {
+					C[i_aux*C_stride + j] +=
+						A[i_aux*A_stride + k] * B[k*B_stride + j];
+				}
+			}
+		}
+	}
+
+	for (i = M_full; i < M; i++) {
+		for (j = 0; j < N; j++) {
+			// TODO: Can implement a more sophisticated scheme here especially if N > 16.
+			for (k = 0; k < K; k++) {
+				C[i*C_stride + j] +=
+					A[i*A_stride + k] * B[k*B_stride + j];
+			}
 		}
 	}
 }
