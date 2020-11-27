@@ -2,7 +2,7 @@
 
 // ../build/bin/mlir-opt  -convert-linalg-to-loops -affine-gemm-recognizer -lower-affine -convert-scf-to-std  test2.mlir > test2_intermediate.mlir
 
-// ../build/bin/mlir-opt  -convert-std-to-llvm test2_intermediate.mlir | ../build/bin/mlir-cpu-runner -O3 -e main -entry-point-result=void -shared-libs=../build/lib/libmlir_runner_utils.so,../build/lib/libmlir_c_runner_utils.so
+// ../build/bin/mlir-opt  -convert-std-to-llvm test2_intermediate.mlir | ../build/bin/mlir-cpu-runner -O3 -e main -entry-point-result=void -shared-libs=../build/lib/libmlir_runner_utils.so,../build/lib/libmlir_c_runner_utils.so,../polydl_rt/oneDNN/oneDNN/install/lib64/libmkldnn.so
 
 
 #map0 = affine_map<(d0, d1) -> (d0, d1)>
