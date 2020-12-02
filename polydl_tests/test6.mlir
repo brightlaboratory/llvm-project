@@ -1,15 +1,16 @@
 
 // export LD_LIBRARY_PATH=${PWD}/../polydl_rt:$LD_LIBRARY_PATH
 
-// ../build/bin/mlir-opt --affine-polydl="tile-sizes=16 tile-sizes=16 tile-sizes=16 pMaps=0 pMaps=1 pMaps=2 cacheSizes=32768 cacheSizes=1048576 cacheSizes=1441792" -convert-linalg-to-loops -affine-gemm-recognizer -lower-affine -convert-scf-to-std  test5.mlir > test5_intermediate.mlir
+// ../build/bin/mlir-opt --affine-polydl="tile-sizes=16 tile-sizes=16 tile-sizes=16 pMaps=0 pMaps=1 pMaps=2 cacheSizes=32768 cacheSizes=1048576 cacheSizes=1441792" -convert-linalg-to-loops -affine-gemm-recognizer -lower-affine -convert-scf-to-std  test6.mlir > test6_intermediate.mlir
 
-// ../build/bin/mlir-opt  -convert-std-to-llvm test5_intermediate.mlir | ../build/bin/mlir-cpu-runner -O3 -e main -entry-point-result=void -shared-libs=../build/lib/libmlir_runner_utils.so,../build/lib/libmlir_c_runner_utils.so
+// ../build/bin/mlir-opt  -convert-std-to-llvm test6_intermediate.mlir | ../build/bin/mlir-cpu-runner -O3 -e main -entry-point-result=void -shared-libs=../build/lib/libmlir_runner_utils.so,../build/lib/libmlir_c_runner_utils.so
 
 func @main() {
   %A = alloc() : memref<2048x2048xf32>
   %B = alloc() : memref<2048x2048xf32>
   %C = alloc() : memref<2048x2048xf32>
   %cf1 = constant 1.00000e+00 : f32
+  %cf100 = constant 20.00000e+00 : f64
 
   %ci0 = constant 0 : index
   %ci1 = constant 1 : index
@@ -31,12 +32,13 @@ call @polydl_fill(%B) : (memref<2048x2048xf32>) -> ()
   %K = dim %A, %ci1 : memref<2048x2048xf32>
 
   %t_start = call @rtclock() : () -> f64
-  // affine.for %arg0 = 0 to 1 {
+  affine.for %arg0 = 0 to 20 {
   call @sgemm_naive(%A, %B, %C) : (memref<2048x2048xf32>, memref<2048x2048xf32>, memref<2048x2048xf32>) -> ()
   // call @polydl_matmul_f32(%pA, %pB, %pC, %M, %N, %K) : (memref<*xf32>, memref<*xf32>, memref<*xf32>, index, index, index) -> ()
- // }
+  }
   %t_end = call @rtclock() : () -> f64
-  %t = subf %t_end, %t_start : f64
+  %t_i = subf %t_end, %t_start : f64
+  %t = divf %t_i, %cf100 : f64
 
   // call @print_memref_f32(%pC) : (memref<*xf32>) -> ()
   call @print_memref_f32_polydl(%pC) : (memref<*xf32>) -> ()
@@ -95,6 +97,7 @@ func @polydl_fill(%argAA: memref<2048x2048xf32>) {
     return
 }
 
+func @printF32(f32)
 func @print_flops(f64)
 func @rtclock() -> f64
 func @print_memref_f32_polydl(memref<*xf32>)
@@ -102,3 +105,4 @@ func @print_memref_f32(memref<*xf32>)
 func @print_open()
 func @print_close() 
 func @polydl_matmul_f32(memref<*xf32>, memref<*xf32>, memref<*xf32>, index, index, index)
+func @printComma()
