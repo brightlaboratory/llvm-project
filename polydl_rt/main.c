@@ -118,10 +118,12 @@ double rtclock() {
 int main(int argc, char** argv) {
 	long long int M = 32, N = 32, K = 32;
 
+	int iters = 100;
 	int i = 1;
 	if (argc > i) M = atoi(argv[i++]);
 	if (argc > i) N = atoi(argv[i++]);
 	if (argc > i) K = atoi(argv[i++]);
+	if (argc > i) iters = atoi(argv[i++]);
 
 	float *A = (float*)malloc(sizeof(float)*M*K);
 	float *B = (float*)malloc(sizeof(float)*K*N);
@@ -132,10 +134,7 @@ int main(int argc, char** argv) {
 	matmul_ref(M, N, K, A, B, C_ref);
 	double t_start, t_end;
 
-	t_start = rtclock();
 	polydl_lib_matmul_f32(M, N, K, K, N, N, A, B, C);
-	t_end = rtclock();
-
 	correctness_t norms_fwd;
 	memset(&norms_fwd, 0, sizeof(norms_fwd));
 	/* compare */
@@ -146,8 +145,15 @@ int main(int argc, char** argv) {
 	printf("    inf-norm of comp. rel. error: %f\n", norms_fwd.max_rel_err);
 	printf("    inf-norm of comp. abs. error: %f\n", norms_fwd.max_abs_err);
 
+	t_start = rtclock();
+	for (i = 0; i < iters; i++) {
+		polydl_lib_matmul_f32(M, N, K, K, N, N, A, B, C);
+	}
+
+	t_end = rtclock();
+
 	printf("%0.2lf GFLOPS\n",
-		2.0 * M * N * K / (t_end - t_start) / 1E9);
+		(iters * 2.0 * M * N * K) / (t_end - t_start) / 1E9);
 
 	return 0;
 }

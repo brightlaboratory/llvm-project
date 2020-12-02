@@ -1,4 +1,11 @@
+Install the Intel oneDNN library using the script: oneDNN/buildoneDNN.sh
 sh create_lib.sh
+
+Set the number of threads to use to 1 because the oneDNN library will be used for microkernel implementations. We will have parallelism in the MLIR code and we do not want to use oneDNN's parallelization. Instead we would like the microkernels to be run on individual cores.
+
+export OMP_NUM_THREADS=1
+export LD_LIBRARY_PATH=${PWD}/oneDNN/oneDNN/install/lib64/:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=${PWD}/../polydl_rt:$LD_LIBRARY_PATH
 
 In the build directory:
 

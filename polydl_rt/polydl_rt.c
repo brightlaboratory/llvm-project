@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <immintrin.h>
-
+#include <mkldnn.h>
+#include <omp.h>
 
 
 void print_f32_polydl(

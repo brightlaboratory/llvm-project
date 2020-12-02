@@ -3,7 +3,7 @@
 
 // ../build/bin/mlir-opt  -convert-linalg-to-loops -affine-gemm-recognizer -lower-affine -convert-scf-to-std  test1.mlir > test1_intermediate.mlir
 
-// ../build/bin/mlir-opt  -convert-std-to-llvm test1_intermediate.mlir | ../build/bin/mlir-cpu-runner -O3 -e main -entry-point-result=void -shared-libs=../build/lib/libmlir_runner_utils.so,../build/lib/libmlir_c_runner_utils.so
+// ../build/bin/mlir-opt  -convert-std-to-llvm test1_intermediate.mlir | ../build/bin/mlir-cpu-runner -O3 -e main -entry-point-result=void -shared-libs=../build/lib/libmlir_runner_utils.so,../build/lib/libmlir_c_runner_utils.so,../polydl_rt/oneDNN/oneDNN/install/lib64/libmkldnn.so
 
 func @main() {
   %A = alloc() : memref<2048x2048xf32>
