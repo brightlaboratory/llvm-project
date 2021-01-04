@@ -8,6 +8,7 @@
 #map3 = affine_map<(d0)[d1] -> ((d0 floordiv d1))>
 #map4 = affine_map<(d0,d1) -> (d0 + d1)>
 #map5 = affine_map<(d0)[d1] -> (d0 * d1)>
+#map6 = affine_map<(d0) -> (d0+1)>
 
 func @cnn(%nImg: index,%nIfm: index,%nOfm: index,%ifhp: index,%ifwp: index,%ofhp: index,%ofwp: index,%ifh: index,%ifw: index,%ofh: index,%ofw: index,%pad_h: index,%pad_w: index,%pad_h_in: index,
   %pad_w_in: index,%pad_h_out: index,%pad_w_out: index,%kh: index,%kw: index,%stride_h: index,%stride_w: index,
@@ -78,6 +79,7 @@ func @printoutput_cnn(%nImg: index,%nIfm: index,%nOfm: index,%ifhp: index,%ifwp:
             %temp_output = affine.load %output[%img, %ofm_tile, %oj, %oi,%ofm] : memref<?x?x?x?x?xf32>
           
             call @printF32(%temp_output): (f32) -> ()
+            call @printNewline() : () -> ()
           }
         }
       }
@@ -119,9 +121,11 @@ func @main() {
   %GEMM_BLOCK_MAIN = constant 64: index
   
   %ofh1 = affine.apply #map2 (%ifh ,%pad_h , %kh)
-  %ofh = affine.apply #map3 (%ofh1)[%stride_h]
+  %ofh2 = affine.apply #map3 (%ofh1)[%stride_h]
+  %ofh = affine.apply #map6  (%ofh2)
   %ofw1 = affine.apply #map2 (%ifw ,%pad_w , %kw)
-  %ofw = affine.apply #map3 (%ofw1)[%stride_w]
+  %ofw2 = affine.apply #map3 (%ofw1)[%stride_w]
+  %ofw = affine.apply #map6  (%ofw2)
 
   %ifhp =  affine.apply #map1 (%ifh ,%pad_h_in)
   %ifwp =  affine.apply #map1 (%ifw ,%pad_w_in)
@@ -220,9 +224,5 @@ func @main() {
   return
 }
 
-func @print_f32(f32)
-func @print_comma()
-func @print_open()
-func @print_close() 
-func @print_newline() 
+func @printNewline() 
 func @printF32(f32)
