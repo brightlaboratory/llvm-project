@@ -196,6 +196,11 @@ GEMMOperand isAGEMMLoopNest(AffineForOp forOp1) {
 													LLVM_DEBUG(val.print(dbgs() << "\nValue:\n"));
 												}
 
+												if (mapOperands.size() < 2) {
+													gemmOperand.isGEMM = false;
+													return gemmOperand;
+												}
+
 												// Check if the array index variable is the same as the loop
 												// variable C[i][j] : C[M][N]
 												bool forOp1Taken = false, forOp2Taken = false,
@@ -328,6 +333,7 @@ GEMMOperand isAGEMMLoopNest(AffineForOp forOp1) {
 			}
 		}
 	}
+
 	return gemmOperand;
 }
 

@@ -1,7 +1,7 @@
 // Command line:
 // ../build/bin/mlir-opt --convert-linalg-to-affine-loops --lower-affine -convert-scf-to-std --convert-std-to-llvm conv2d_padded.mlir | ../build/bin/mlir-cpu-runner -O3 -e main -entry-point-result=void -shared-libs=../build/lib/libmlir_runner_utils.so,../build/lib/libmlir_c_runner_utils.so,../polydl_rt/oneDNN/oneDNN/install/lib64/libmkldnn.so
 
-// ../build/bin/mlir-opt --convert-linalg-to-affine-loops -affine-gemm-recognizer  --convert-std-to-llvm conv2d_padded.mlir -debug-only=affine-gemm-recognizer
+// ../build/bin/mlir-opt --convert-linalg-to-affine-loops -affine-gemm-recognizer  --convert-std-to-llvm conv2d_padded.mlir -debug-only=affine-gemm-recognizer --mlir-disable-threading
 
 #map1 = affine_map<(d0,d1) -> (d0 + 2*d1)>
 #map2 = affine_map<(d0,d1,d2) -> ((d0 + 2*d1 - d2))>
