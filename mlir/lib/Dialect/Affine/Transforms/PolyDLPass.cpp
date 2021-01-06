@@ -38,6 +38,9 @@ namespace {
         void generateFuncCopies(FuncOp f, SmallVector<unsigned, 6> tileSizes, SmallVector<unsigned, 4> permMap);
         void statsWorkingSetSizes(std::vector<long int> bandFootprints);
         void computeWorkingSetSizes(ArrayRef<AffineForOp> band);
+        void generate_ranking();
+        void generateTop5pct(std::vector<SmallVector<unsigned, 6> > tileSizeOut,std::vector<SmallVector<unsigned, 4> > permMapOut);
+        std::vector<std::vector<float>> dataset; 
 	};
 
 } // end anonymous namespace
@@ -83,6 +86,11 @@ void generateTileSizes(int p, int n,std::vector<int> lowerBound,std::vector<int>
     } 
 }
 
+bool sortcol( const std::vector<float>& v1, 
+               const std::vector<float>& v2 ) { 
+ return v1[4] < v2[4]; 
+} 
+
 void PolyDLPass::statsWorkingSetSizes(std::vector<long int> bandFootprints) {
     
     long int L1CacheSize,L2CacheSize,L3CacheSize;
@@ -94,9 +102,9 @@ void PolyDLPass::statsWorkingSetSizes(std::vector<long int> bandFootprints) {
         SmallVector<unsigned, 4> Ex_cacheSize;        
         for(auto i : explicit_cacheSizes)
             Ex_cacheSize.push_back(i);
-        dbgs()<<"Cache Size "<< Ex_cacheSize[0] <<"\n" ;
-        dbgs()<<"Cache Size "<< Ex_cacheSize[1] <<"\n" ;
-        dbgs()<<"Cache Size "<< Ex_cacheSize[2] <<"\n" ;
+        // dbgs()<<"Cache Size "<< Ex_cacheSize[0] <<"\n" ;
+        // dbgs()<<"Cache Size "<< Ex_cacheSize[1] <<"\n" ;
+        // dbgs()<<"Cache Size "<< Ex_cacheSize[2] <<"\n" ;
         L1CacheSize= Ex_cacheSize[0];
         L2CacheSize= Ex_cacheSize[1];
         L3CacheSize= Ex_cacheSize[2];
@@ -107,7 +115,7 @@ void PolyDLPass::statsWorkingSetSizes(std::vector<long int> bandFootprints) {
     }
     
 
-    long int L1_WSS=0, L2_WSS=0, L3_WSS=0, Mem_WSS=0;
+    float L1_WSS=0, L2_WSS=0, L3_WSS=0, Mem_WSS=0;
     bool Done;
     for (auto it = bandFootprints.rbegin(); it != bandFootprints.rend(); ++it)
     {
@@ -131,12 +139,89 @@ void PolyDLPass::statsWorkingSetSizes(std::vector<long int> bandFootprints) {
         }
     }
 
-    // Testing/Printing Working set sizes
-    dbgs()<< "L1_WSS "<< L1_WSS << "\n";
-    dbgs()<< "L2_WSS "<< L2_WSS << "\n"; 
-    dbgs()<< "L3_WSS "<< L3_WSS << "\n"; 
-    dbgs()<< "Mem_WSS "<< Mem_WSS << "\n"; 
-    
+    if (!explicit_tileSizes.empty() && !explicit_pmaps.empty()){
+        // Testing/Printing Working set sizes
+        dbgs()<< "L1_WSS "<< L1_WSS << "\n";
+        dbgs()<< "L2_WSS "<< L2_WSS << "\n"; 
+        dbgs()<< "L3_WSS "<< L3_WSS << "\n"; 
+        dbgs()<< "Mem_WSS "<< Mem_WSS << "\n"; 
+    }
+
+    //Adding Values in a Dataset.
+    std::vector<float> rowDataset;
+    long int total_WSS = L1_WSS + L2_WSS + L3_WSS + Mem_WSS;
+    rowDataset.push_back(L1_WSS/total_WSS);
+    rowDataset.push_back(L2_WSS/total_WSS);
+    rowDataset.push_back(L3_WSS/total_WSS);
+    rowDataset.push_back(Mem_WSS/total_WSS);
+    dataset.push_back(rowDataset); 
+}
+
+void PolyDLPass:: generate_ranking(){
+
+    int L1_latency, L2_latency, L3_latency, mem_latency;
+    if (!explicit_latencySizes.empty() && explicit_latencySizes.size()==4){
+        SmallVector<unsigned, 4> Ex_latencySize;        
+        for(auto i : explicit_latencySizes)
+            Ex_latencySize.push_back(i);
+            
+        L1_latency= Ex_latencySize[0];
+        L2_latency= Ex_latencySize[1];
+        L3_latency= Ex_latencySize[2];
+        mem_latency= Ex_latencySize[3];
+
+    }else{
+        L1_latency=4, L2_latency=14, L3_latency=60, mem_latency=84;
+    }
+    for (int i = 0; i < dataset.size(); i++) { 
+        dataset[i].push_back(dataset[i][0]*L1_latency + dataset[i][1]*L2_latency + dataset[i][2]*L3_latency + dataset[i][3]*mem_latency);
+    }
+}
+
+void PolyDLPass:: generateTop5pct(std::vector<SmallVector<unsigned, 6> > tileSizeOut,std::vector<SmallVector<unsigned, 4> > permMapOut){
+    // float optProxy = dataset[0][4];
+            // int optVersion = 0;
+            // std::vector<float> proxyVector;
+            for (int i = 0; i < dataset.size(); i++) { 
+                dataset[i].push_back(float(i));
+            //     proxyVector.push_back(dataset[i][4]);
+            //     if(dataset[i][4]< optProxy){
+            //         optProxy = dataset[i][4];
+            //         optVersion = i;
+            //     }
+
+            //     dbgs() << tileSizeOut[i%tileSizeOut.size()][0] << " "; 
+            //     dbgs() << tileSizeOut[i%tileSizeOut.size()][1] << " "; 
+            //     dbgs() << tileSizeOut[i%tileSizeOut.size()][2] << " "; 
+            //     dbgs() << permMapOut[int(i/tileSizeOut.size())][0] << " "; 
+            //     dbgs() << permMapOut[int(i/tileSizeOut.size())][1] << " "; 
+            //     dbgs() << permMapOut[int(i/tileSizeOut.size())][2] << " "; 
+            //     for (int j = 0; j < dataset[i].size(); j++) 
+            //         dbgs() << dataset[i][j] << " "; 
+            //     dbgs() << "\n"; 
+            }
+            
+            // int minElementIndex = std::min_element(proxyVector.begin(),proxyVector.end()) - proxyVector.begin();
+            // float minElement = *std::min_element(proxyVector.begin(), proxyVector.end());
+            // dbgs() << "minElementIndex:" << minElementIndex << ", minElement:" << minElement << '\n';
+
+            sort(dataset.begin(), dataset.end(),sortcol); 
+            // dbgs()<<"Column se " << dataset[0][5]<< "\n";
+            // dbgs() << "Tiles size for optimization " << optVersion; 
+
+            int place_idx;
+            for (int i = 0; i < int(dataset.size()*0.05); i++) {
+                place_idx = int(dataset[i][5]);
+                dbgs() << tileSizeOut[place_idx%tileSizeOut.size()][0] << " "; 
+                dbgs() << tileSizeOut[place_idx%tileSizeOut.size()][1] << " "; 
+                dbgs() << tileSizeOut[place_idx%tileSizeOut.size()][2] << " "; 
+                dbgs() << permMapOut[int(place_idx/tileSizeOut.size())][0] << " "; 
+                dbgs() << permMapOut[int(place_idx/tileSizeOut.size())][1] << " "; 
+                dbgs() << permMapOut[int(place_idx/tileSizeOut.size())][2] << " ";
+               for (int j = 0; j < dataset[i].size(); j++) 
+                    dbgs() << dataset[i][j] << " "; 
+                dbgs() << "\n"; 
+            }
 }
 
 void PolyDLPass::computeWorkingSetSizes(ArrayRef<AffineForOp> band) {
@@ -173,10 +258,10 @@ void PolyDLPass::generateFuncCopies(FuncOp f, SmallVector<unsigned, 6> tileSizes
                 break;
             index++;
         } 
-        for(auto i : band)
-            dbgs()<< "band" << i << "\n";
+        // for(auto i : band)
+        //     dbgs()<< "band" << i << "\n";
 
-        dbgs() << "band size " << band.size() <<"\n";
+        // dbgs() << "band size " << band.size() <<"\n";
         if (band.size() == permMap.size() && band.size() == tileSizes.size()){
 
             permuteLoops(band, permMap);
@@ -188,13 +273,13 @@ void PolyDLPass::generateFuncCopies(FuncOp f, SmallVector<unsigned, 6> tileSizes
             if (failed(tilePerfectlyNested(nest, tileSizes, &tiledNest)))
             return signalPassFailure();
 
-            for (auto i : tiledNest) 
-                dbgs()<< "tiledNest" << *i  << '\n'; 
+            // for (auto i : tiledNest) 
+            //     dbgs()<< "tiledNest" << *i  << '\n'; 
 
             unsigned innermostLoopIdx = tiledNest.size() -1;
 
             auto innermostLoop = tiledNest[innermostLoopIdx];
-            dbgs()<< "innermostLoop" <<  innermostLoop << '\n';
+            // dbgs()<< "innermostLoop" <<  innermostLoop << '\n';
             auto loopNest = tiledNest[loopNestIdx];
 
             AffineStoreOp store;
@@ -240,10 +325,10 @@ void PolyDLPass::runOnFunction() {
             AffineForOp rootAffineForOp = origLoops[i];
 
             //Setting Lower bound.
-            if(rootAffineForOp.getConstantLowerBound()>=4){
+            if(rootAffineForOp.getConstantLowerBound()>=16){
                 lowerBound.push_back(rootAffineForOp.getConstantLowerBound());
             }else{
-                lowerBound.push_back(4);
+                lowerBound.push_back(16);
             }
             //Setting Upper bound.
             upperBound.push_back(rootAffineForOp.getConstantUpperBound());
@@ -270,10 +355,17 @@ void PolyDLPass::runOnFunction() {
                 
             generateFuncCopies(f,Ex_tileSizes,Ex_permMap);
 
-        }else{
+        }else if (band.size()==3){
             for (auto &permMap : permMapOut)
                 for (unsigned p = 0; p < tileSizeOut.size(); p++) 
                     generateFuncCopies(f.clone(),tileSizeOut[p],permMap);
+            
+            generate_ranking();
+
+            generateTop5pct(tileSizeOut,permMapOut);
+
+            generateFuncCopies(f,tileSizeOut[int(dataset[0][5])%tileSizeOut.size()],permMapOut[int(int(dataset[0][5])/tileSizeOut.size())]);
+
         }
 
     }

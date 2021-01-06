@@ -76,6 +76,9 @@ def PolyDLPass
               "List of Permutation maps">,
        Option<"explicit_cacheSize", "cacheSize", "unsigned", /*default=*/"",
               "List of Cache Sizes">,
+       Option<"explicit_latencySize", "latencySize", "unsigned", /*default=*/"",
+              "List of Cache Latencies">,
+
        ListOption<"explicit_tileSizes", "tile-sizes", "unsigned",
               "List of tile sizes for each perfect nest "
               "(overridden by -tile-size)",
@@ -87,6 +90,10 @@ def PolyDLPass
        ListOption<"explicit_cacheSizes", "cacheSizes", "unsigned",
               "List of L1 L2 L3 Cache Sizes "
               "(overridden by -cacheSizes)",
+              "llvm::cl::ZeroOrMore">,
+       ListOption<"explicit_latencySizes", "latencySizes", "unsigned",
+              "List of L1 L2 L3 & Mem Latency Sizes "
+              "(overridden by -latencySizes)",
               "llvm::cl::ZeroOrMore">,           
   ];
 }

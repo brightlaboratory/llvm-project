@@ -56,16 +56,19 @@ void polydl_lib_matmul_f32(long long int M, long long int N, long long int K,
 	int useoneDNN = 0;
 
 	if (useoneDNN) {
-                //printf("oneDNN\n");
+                // printf("oneDNN\n");
                 //omp_set_dynamic(0);
                 //omp_set_num_threads(1);
 		dnnl_sgemm('N', 'N', M, N, K, 1.0, A, A_stride,
 			B, B_stride, 1.0, C, C_stride);
+			printf("%f, %f, %f \n",A[10],B[10], C[10] );
 	}
 	else {
 		// i_8_j_16_k_1 is empirically found to be the highest performing version
 		polydl_lib_matmul_f32_i_8_j_16_k_1_fma(M, N, K,
 			A_stride, B_stride, C_stride, A, B, C);
+			// printf("AVX\n");
+			// printf("%f, %f, %f \n",A[10],B[10], C[10] );
 	}
 }
 

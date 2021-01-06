@@ -57,13 +57,14 @@ func @main() {
 
 func @sgemm_naive(%arg0: memref<2048x2048xf32>, %arg1: memref<2048x2048xf32>, %arg2: memref<2048x2048xf32>) {
   %c0 = constant 0 : index
+  %c2048 = constant 0 : index
   affine.for %arg3 = 0 to 2048 {
     affine.for %arg4 = 0 to 2048 {
       affine.for %arg5 = 0 to 2048 {
         %3 = affine.load %arg0[%arg3, %arg5] : memref<2048x2048xf32>
         %4 = affine.load %arg1[%arg5, %arg4] : memref<2048x2048xf32>
         %5 = affine.load %arg2[%arg3, %arg4] : memref<2048x2048xf32>
-        %6 = mulf %3, %4 : f32
+        %6 = mulf %3, %3 : f32
         %7 = addf %6, %5 : f32
         affine.store %7, %arg2[%arg3, %arg4] : memref<2048x2048xf32>
       }
