@@ -88,25 +88,25 @@ func @cnn(%nImg: index,%nIfm: index,%nOfm: index,%ifhp: index,%ifwp: index,%ofhp
                     %ij_kj =  affine.apply #map4 (%ij ,%kj)
                     %ii_ki =  affine.apply #map4 (%ii ,%ki) 
 
-                    //%temp_input = affine.load %input[%img, %ifm_tile, %ij_kj, %ii_ki,%ifm] : memref<?x?x?x?x?xf32>
-                    //%temp_filter = affine.load %filter[%ofm_tile, %ifm_tile, %kj, %ki,%ofm,%ifm] : memref<?x?x?x?x?x?xf32>
-                    //%temp_output = affine.load %output[%img, %ofm_tile, %oj, %oi,%ofm] : memref<?x?x?x?x?xf32>
+                    %temp_input = affine.load %input[%img, %ifm_tile, %ij_kj, %ii_ki,%ifm] : memref<?x?x?x?x?xf32>
+                    %temp_filter = affine.load %filter[%ofm_tile, %ifm_tile, %kj, %ki,%ifm,%ofm] : memref<?x?x?x?x?x?xf32>
+                    %temp_output = affine.load %output[%img, %ofm_tile, %oj, %oi,%ofm] : memref<?x?x?x?x?xf32>
                     //
-                    //%temp_mul = mulf %temp_input, %temp_filter : f32
-                    //%temp_add = addf %temp_output, %temp_mul : f32
+                    %temp_mul = mulf %temp_input, %temp_filter : f32
+                    %temp_add = addf %temp_output, %temp_mul : f32
 //
                     ////call @print_f32(%temp_add): (f32) -> ()
 //
-                    //affine.store %temp_add, %output[%img, %ofm_tile, %oj, %oi,%ofm] : memref<?x?x?x?x?xf32>
+                    affine.store %temp_add, %output[%img, %ofm_tile, %oj, %oi,%ofm] : memref<?x?x?x?x?xf32>
 
-                    %temp_C = affine.load %C[%ofm,%oi] : memref<?x?xf32>
-                    %temp_B = affine.load %B[%ifm,%oi] : memref<?x?xf32>
-                    %temp_A = affine.load %A[%ofm,%ifm] : memref<?x?xf32>
+//                    %temp_C = affine.load %C[%ofm,%oi] : memref<?x?xf32>
+//                    %temp_B = affine.load %B[%ifm,%oi] : memref<?x?xf32>
+//                    %temp_A = affine.load %A[%ofm,%ifm] : memref<?x?xf32>
                     //
-                    %temp_mul = mulf %temp_A, %temp_B : f32
-                    %temp_add = addf %temp_C, %temp_mul : f32
+//                    %temp_mul = mulf %temp_A, %temp_B : f32
+//                    %temp_add = addf %temp_C, %temp_mul : f32
 //
-                    affine.store %temp_add, %C[%ofm,%oi] : memref<?x?xf32>
+//                    affine.store %temp_add, %C[%ofm,%oi] : memref<?x?xf32>
 
                   }
                 }
@@ -117,7 +117,7 @@ func @cnn(%nImg: index,%nIfm: index,%nOfm: index,%ifhp: index,%ifwp: index,%ofhp
               affine.for %oi = 0 to %ofw  {
                 affine.for %ofm = 0 to %GEMM_BLOCK {
                     %unpack_output = affine.load %C[%ofm,%oi] : memref<?x?xf32>
-                    affine.store %unpack_output, %output[%img, %ofm_tile, %oj, %oi,%ofm] : memref<?x?x?x?x?xf32>                 
+                    // affine.store %unpack_output, %output[%img, %ofm_tile, %oj, %oi,%ofm] : memref<?x?x?x?x?xf32>                 
                 }
             }
 

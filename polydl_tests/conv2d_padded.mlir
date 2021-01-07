@@ -30,7 +30,7 @@ func @cnn(%nImg: index,%nIfm: index,%nOfm: index,%ifhp: index,%ifwp: index,%ofhp
         affine.for %kj = 0 to %kh {
           affine.for %ki = 0 to %kw {
             affine.for %oi = 0 to %ofw {
-              %ii =  affine.apply #map5 (%oi )[%STRIDE_H]
+              %ii =  affine.apply #map5 (%oi )[%STRIDE_W]
               affine.for %ofm = 0 to %GEMM_BLOCK {
                 affine.for %ifm = 0 to %GEMM_BLOCK {
                     %ij_kj =  affine.apply #map4 (%ij ,%kj)
