@@ -59,7 +59,7 @@ func @cnn(%nImg: index,%nIfm: index,%nOfm: index,%ifhp: index,%ifwp: index,%ofhp
             //Packing Code for A
             affine.for %ofm = 0 to %GEMM_BLOCK {
                 affine.for %ifm = 0 to %GEMM_BLOCK {
-                    %store_filter = affine.load %filter[%ofm_tile, %ifm_tile, %kj, %ki,%ofm,%ifm] : memref<?x?x?x?x?x?xf32>
+                    %store_filter = affine.load %filter[%ofm_tile, %ifm_tile, %kj, %ki,%ifm,%ofm] : memref<?x?x?x?x?x?xf32>
                     affine.store %store_filter, %A[%ofm,%ifm]  : memref<?x?xf32>                 
                 }
             }
@@ -101,7 +101,7 @@ func @cnn(%nImg: index,%nIfm: index,%nOfm: index,%ifhp: index,%ifwp: index,%ofhp
 
                     %temp_C = affine.load %C[%ofm,%oi] : memref<?x?xf32>
                     %temp_B = affine.load %B[%ifm,%oi] : memref<?x?xf32>
-                    %temp_A = affine.load %A[%ifm,%ofm] : memref<?x?xf32>
+                    %temp_A = affine.load %A[%ofm,%ifm] : memref<?x?xf32>
                     //
                     %temp_mul = mulf %temp_A, %temp_B : f32
                     %temp_add = addf %temp_C, %temp_mul : f32
