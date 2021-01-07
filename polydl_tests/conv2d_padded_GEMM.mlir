@@ -74,7 +74,7 @@ func @cnn(%nImg: index,%nIfm: index,%nOfm: index,%ifhp: index,%ifwp: index,%ofhp
             //%N =  affine.apply #map4 (%ij ,%kj)
             //%K =  affine.apply #map4 (%ij ,%kj)
 
-//            call @polydl_matmul_f32( %1 , %0 , %2,%ofw,%GEMM_BLOCK,%GEMM_BLOCK) : (memref<*xf32>, memref<*xf32>, memref<*xf32>, index, index, index) -> ()
+            call @polydl_matmul_f32( %0 , %1 , %2,%GEMM_BLOCK,%ofw,%GEMM_BLOCK) : (memref<*xf32>, memref<*xf32>, memref<*xf32>, index, index, index) -> ()
 
             //%3 = memref_cast %2 :  memref<*xf32> to memref<?x?xf32>
             //%t = affine.load %3[%c5,%c5] : memref<?x?xf32>
@@ -99,14 +99,14 @@ func @cnn(%nImg: index,%nIfm: index,%nOfm: index,%ifhp: index,%ifwp: index,%ofhp
 //
 //                    affine.store %temp_add, %output[%img, %ofm_tile, %oj, %oi,%ofm] : memref<?x?x?x?x?xf32>
 
-                    %temp_C = affine.load %C[%ofm,%oi] : memref<?x?xf32>
-                    %temp_B = affine.load %B[%ifm,%oi] : memref<?x?xf32>
-                    %temp_A = affine.load %A[%ofm,%ifm] : memref<?x?xf32>
+//                    %temp_C = affine.load %C[%ofm,%oi] : memref<?x?xf32>
+//                    %temp_B = affine.load %B[%ifm,%oi] : memref<?x?xf32>
+//                    %temp_A = affine.load %A[%ofm,%ifm] : memref<?x?xf32>
                     //
-                    %temp_mul = mulf %temp_A, %temp_B : f32
-                    %temp_add = addf %temp_C, %temp_mul : f32
+//                    %temp_mul = mulf %temp_A, %temp_B : f32
+//                    %temp_add = addf %temp_C, %temp_mul : f32
 
-                    affine.store %temp_add, %C[%ofm,%oi] : memref<?x?xf32>
+//                    affine.store %temp_add, %C[%ofm,%oi] : memref<?x?xf32>
 
                   }
                 }
