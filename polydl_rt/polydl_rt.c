@@ -49,8 +49,8 @@ void polydl_lib_matmul_f32(long long int M, long long int N, long long int K,
 	long long int A_stride, long long int B_stride, long long int C_stride,
 	float *A, float *B, float *C) {
 
-	int useoneDNN = 0;
-        int useNaive = 1;
+	int useoneDNN = 1;
+        int useNaive = 0;
 
         if (useNaive) {
             polydl_lib_matmul_f32_naive(M, N, K,
