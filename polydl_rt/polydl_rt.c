@@ -50,8 +50,12 @@ void polydl_lib_matmul_f32(long long int M, long long int N, long long int K,
 	float *A, float *B, float *C) {
 
 	int useoneDNN = 0;
+        int useNaive = 1;
 
-	if (useoneDNN) {
+        if (useNaive) {
+            polydl_lib_matmul_f32_naive(M, N, K,
+                        A_stride, B_stride, C_stride, A, B, C);
+        } else if (useoneDNN) {
                 //printf("oneDNN\n");
                 //omp_set_dynamic(0);
                 //omp_set_num_threads(1);
