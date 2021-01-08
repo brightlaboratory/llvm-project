@@ -212,14 +212,14 @@ void PolyDLPass:: generateTop5pct(std::vector<SmallVector<unsigned, 6> > tileSiz
             int place_idx;
             for (int i = 0; i < int(dataset.size()*0.05); i++) {
                 place_idx = int(dataset[i][5]);
-                dbgs() << tileSizeOut[place_idx%tileSizeOut.size()][0] << " "; 
-                dbgs() << tileSizeOut[place_idx%tileSizeOut.size()][1] << " "; 
-                dbgs() << tileSizeOut[place_idx%tileSizeOut.size()][2] << " "; 
-                dbgs() << permMapOut[int(place_idx/tileSizeOut.size())][0] << " "; 
-                dbgs() << permMapOut[int(place_idx/tileSizeOut.size())][1] << " "; 
-                dbgs() << permMapOut[int(place_idx/tileSizeOut.size())][2] << " ";
-               for (int j = 0; j < dataset[i].size(); j++) 
-                    dbgs() << dataset[i][j] << " "; 
+                dbgs() << tileSizeOut[place_idx%tileSizeOut.size()][0] << ","; 
+                dbgs() << tileSizeOut[place_idx%tileSizeOut.size()][1] << ","; 
+                dbgs() << tileSizeOut[place_idx%tileSizeOut.size()][2] << ","; 
+                dbgs() << permMapOut[int(place_idx/tileSizeOut.size())][0] << ","; 
+                dbgs() << permMapOut[int(place_idx/tileSizeOut.size())][1] << ","; 
+                dbgs() << permMapOut[int(place_idx/tileSizeOut.size())][2] << ",";
+               for (int j = 0; j < dataset[i].size() -1; j++) 
+                    dbgs() << dataset[i][j] << ","; 
                 dbgs() << "\n"; 
             }
 }
@@ -231,7 +231,7 @@ void PolyDLPass::computeWorkingSetSizes(ArrayRef<AffineForOp> band) {
    for(unsigned i = 0, e = band.size(); i < e; i++) {
         auto fp = getMemoryFootprintBytes(band[i], 0);
         if (fp) {
-            dbgs() << " Functions Size: " << fp.getValue() << "\n";
+            // dbgs() << " Functions Size: " << fp.getValue() << "\n";
             bandFootprints.push_back(fp.getValue());
         } else {
             dbgs() << " fp is NULL \n";

@@ -74,7 +74,7 @@ func @cnn(%nImg: index,%nIfm: index,%nOfm: index,%ifhp: index,%ifwp: index,%ofhp
             //%M =  affine.apply #map4 (%ij ,%kj)
             //%N =  affine.apply #map4 (%ij ,%kj)
             //%K =  affine.apply #map4 (%ij ,%kj)
-            call @polydl_matmul_f32( %1 , %0 , %2,%ofw,%GEMM_BLOCK,%GEMM_BLOCK) : (memref<*xf32>, memref<*xf32>, memref<*xf32>, index, index, index) -> ()
+            call @polydl_matmul_f32( %0 , %1 , %2,%GEMM_BLOCK,%ofw,%GEMM_BLOCK) : (memref<*xf32>, memref<*xf32>, memref<*xf32>, index, index, index) -> ()
             //%3 = memref_cast %2 :  memref<*xf32> to memref<?x?xf32>
             //%t = affine.load %3[%c5,%c5] : memref<?x?xf32>
             //call @printF32(%t): (f32) -> ()
