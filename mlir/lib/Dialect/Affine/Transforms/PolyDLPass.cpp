@@ -362,7 +362,8 @@ void PolyDLPass::runOnFunction() {
             
             generate_ranking();
 
-            generateTop5pct(tileSizeOut,permMapOut);
+            if(top5_variants)
+                generateTop5pct(tileSizeOut,permMapOut);
 
             generateFuncCopies(f,tileSizeOut[int(dataset[0][5])%tileSizeOut.size()],permMapOut[int(int(dataset[0][5])/tileSizeOut.size())]);
 

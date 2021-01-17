@@ -33,8 +33,8 @@ call @polydl_fill(%B) : (memref<2048x2048xf32>) -> ()
 
   %t_start = call @rtclock() : () -> f64
   affine.for %arg0 = 0 to 20 {
-  call @sgemm_naive(%A, %B, %C) : (memref<2048x2048xf32>, memref<2048x2048xf32>, memref<2048x2048xf32>) -> ()
-  // call @polydl_matmul_f32(%pA, %pB, %pC, %M, %N, %K) : (memref<*xf32>, memref<*xf32>, memref<*xf32>, index, index, index) -> ()
+  //call @sgemm_naive(%A, %B, %C) : (memref<2048x2048xf32>, memref<2048x2048xf32>, memref<2048x2048xf32>) -> ()
+  call @polydl_matmul_f32(%pA, %pB, %pC, %M, %N, %K) : (memref<*xf32>, memref<*xf32>, memref<*xf32>, index, index, index) -> ()
   }
   %t_end = call @rtclock() : () -> f64
   %t_i = subf %t_end, %t_start : f64

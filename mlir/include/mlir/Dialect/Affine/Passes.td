@@ -78,6 +78,8 @@ def PolyDLPass
               "List of Cache Sizes">,
        Option<"explicit_latencySize", "latencySize", "unsigned", /*default=*/"",
               "List of Cache Latencies">,
+       Option<"top5_variants", "top5", "unsigned", /*default=*/"",
+              "Generate Top 5% Variants">,
 
        ListOption<"explicit_tileSizes", "tile-sizes", "unsigned",
               "List of tile sizes for each perfect nest "
