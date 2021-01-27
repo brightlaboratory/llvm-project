@@ -13,7 +13,7 @@ import sys
 # In[2]:
 
 
-output = "output.cpp"
+output = "output.c"
 
 
 # ### New File
@@ -34,7 +34,8 @@ def reset():
 
 def open_function(step_M,step_N,step_K):
     f = open(output, "a+") 
-    f.write('void polydl_lib_matmul_f32_i_%d_j_%d_k_%d_fma( long long int M, long long int N, long long int K,long long int A_stride, long long int B_stride, long long int C_stride, float *A, float *B, float *C) {\n' %(step_M,step_N,step_K))
+    # f.write('void polydl_lib_matmul_f32_i_%d_j_%d_k_%d_fma( long long int M, long long int N, long long int K,long long int A_stride, long long int B_stride, long long int C_stride, float *A, float *B, float *C) {\n' %(step_M,step_N,step_K))
+    f.write('void polydl_lib_matmul_f32_i_8_j_16_k_1_fma( long long int M, long long int N, long long int K,long long int A_stride, long long int B_stride, long long int C_stride, float *A, float *B, float *C) {\n')
     f.close()
     
 def close_function():
@@ -55,10 +56,29 @@ def declaration(step_M,step_N,step_K, Ti, Tj, Tk):
     f.write('__m512 vec_A;\n')
     
     for variable in ['C','A']:
-        f.write('__m512 ')
+        if(step_M>1):
+            f.write('__m512 ')
         for i in range (1,step_M):
             f.write('vec_' + variable +str(i))
             if(i==step_M-1):
+                f.write(';\n')
+            else:
+                f.write(', ')
+
+    if(step_N>16 and (step_N % 16) == 0):
+        f.write('__m512 ')
+        for i in range (1,int(step_N/16)):
+            for j in range (step_M*i,step_M*(i+1)):
+                f.write('vec_C' +str(j))
+                if(j==(int(step_N/16)*step_M)-1):
+                    f.write(';\n')
+                else:
+                    f.write(', ')
+        
+        f.write('__m512 ')
+        for i in range (1,int(step_N/16)):
+            f.write('vec_B' +str(i*16))
+            if(i==int(step_N/16)-1):
                 f.write(';\n')
             else:
                 f.write(', ')
@@ -74,6 +94,8 @@ def declaration(step_M,step_N,step_K, Ti, Tj, Tk):
         f.write('M_full = (M / %d) * %d ;\n' %(step_M,step_M))
         f.write('N_full = (N / %d) * %d ;\n' %(step_N,step_N))
     
+    # f.write('printf("command-line arguments: %d ,%d ,%d, %d, %d, %d"); \n' %(step_M,step_N,step_K,Ti, Tj, Tk))
+    # print("command-line arguments: ",step_M,step_N,step_K,Ti, Tj, Tk,"\n")
     f.close()
         
 
@@ -112,7 +134,7 @@ def loopOver(step_M,step_N,step_K,Ti,Tj,Tk):
     # Tiled Loops
     if(Ti and Tj and Tk):
         f.write('int it,jt,kt;\n')
-        f.write('for (it = 0; i < M_full; it+=Ti) {\n')
+        f.write('for (it = 0; it < M_full; it+=Ti) {\n')
         f.write('for (jt = 0; jt < N_full; jt+=Tj) {\n')
         f.write('for (kt = 0; kt < K_full; kt+=Tk) {\n')
         M_Conditional = 'min(M_full, it+Ti)'
@@ -136,13 +158,23 @@ def loopOver(step_M,step_N,step_K,Ti,Tj,Tk):
     f.write('for (j = %s; j < %s; j += %d) {\n' % (j_start,N_Conditional, step_N))
     f.write('vec_C = _mm512_load_ps((__m512*)&C[i*C_stride + j]);\n')
     
+    
     for i in range(1, step_M):
         f.write('vec_C%d = _mm512_load_ps((__m512*)&C[(i + %d)*C_stride + j]);\n' % (i, i))
     
+    if(step_N>16 and (step_N % 16) == 0):
+        for j in range (1,int(step_N/16)):
+            for i in range(0, step_M):
+                f.write('vec_C%d = _mm512_load_ps((__m512*)&C[(i + %d)*C_stride + (j+ %d)]);\n' % (step_M * j+ i, i,16*j))
+
     # k Loop
     f.write('for (k = %s; k < %s; k += %d) {\n' % (k_start,K_Conditional,step_K))
     
     f.write('vec_B = _mm512_load_ps((__m512*)&B[k*B_stride + j]);\n')
+    
+    if(step_N>16 and (step_N % 16) == 0):
+        for j in range (1,int(step_N/16)):
+            f.write('vec_B%d = _mm512_load_ps((__m512*)&B[k*B_stride + (j+%d)]);\n'%(j*16 ,j*16))
     
     f.write('vec_A = _mm512_set1_ps(A[i*A_stride + k]);\n')
     for i in range(1, step_M):
@@ -151,6 +183,12 @@ def loopOver(step_M,step_N,step_K,Ti,Tj,Tk):
     f.write('vec_C = _mm512_fmadd_ps(vec_A, vec_B, vec_C);\n')
     for i in range(1, step_M):
         f.write('vec_C%d = _mm512_fmadd_ps(vec_A%d, vec_B, vec_C%d);\n' % (i,i, i))
+    
+    if(step_N>16 and (step_N % 16) == 0):
+        for j in range (1,int(step_N/16)):
+            for i in range(0, step_M):
+                A_id = '' if i == 0 else i
+                f.write('vec_C%d = _mm512_fmadd_ps(vec_A%s, vec_B%d, vec_C%d);\n' % (step_M * j+ i, str(A_id),16*j,step_M * j+ i))
     
     
     f.close()
@@ -162,6 +200,12 @@ def loopOver(step_M,step_N,step_K,Ti,Tj,Tk):
     f.write('_mm512_store_ps((__m512*)&C[i*C_stride + j], vec_C);\n')
     for i in range(1, step_M):
         f.write('_mm512_store_ps((__m512*)&C[(i + %d)*C_stride + j], vec_C%d);\n' % (i,i))
+    
+    if(step_N>16 and (step_N % 16) == 0):
+        for j in range (1,int(step_N/16)):
+            for i in range(0, step_M):
+                f.write('_mm512_store_ps((__m512*)&C[(i + %d)*C_stride + (j+%d)], vec_C%d);\n' % (i, 16*j ,step_M * j+ i))
+
     f.close()
     
     # j Loop
