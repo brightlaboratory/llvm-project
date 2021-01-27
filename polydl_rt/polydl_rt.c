@@ -27,7 +27,7 @@ void polydl_lib_matmul_f32(
 	long long int A_stride, long long int B_stride, long long int C_stride,
 	float *A, float *B, float *C) {
 
-	printf("In polydl_lib_matmul_f32 function\n");
+//	printf("In polydl_lib_matmul_f32 function\n");
 	printf("M = %ld, N = %ld, K = %ld, A_stride = %ld, B_stride = %ld, C_stride = %ld\n",
 		M, N, K, A_stride, B_stride, C_stride);
 
@@ -49,7 +49,8 @@ void polydl_lib_matmul_f32(long long int M, long long int N, long long int K,
 	long long int A_stride, long long int B_stride, long long int C_stride,
 	float *A, float *B, float *C) {
 
-	int useoneDNN = 1;
+ //       printf("In polydl_lib_matmul_f32\n");
+	int useoneDNN = 0;
         int useNaive = 0;
 
         if (useNaive) {
