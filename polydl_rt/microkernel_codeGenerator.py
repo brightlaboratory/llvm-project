@@ -55,6 +55,7 @@ def declaration(step_M,step_N,step_K, Ti, Tj, Tk):
     f.write('__m512 vec_B;\n')
     f.write('__m512 vec_A;\n')
     
+    #  Declarations for step_M variable
     for variable in ['C','A']:
         if(step_M>1):
             f.write('__m512 ')
@@ -65,6 +66,7 @@ def declaration(step_M,step_N,step_K, Ti, Tj, Tk):
             else:
                 f.write(', ')
 
+    # Declarations for step_N variable
     if(step_N>16 and (step_N % 16) == 0):
         f.write('__m512 ')
         for i in range (1,int(step_N/16)):
@@ -77,12 +79,34 @@ def declaration(step_M,step_N,step_K, Ti, Tj, Tk):
         
         f.write('__m512 ')
         for i in range (1,int(step_N/16)):
-            f.write('vec_B' +str(i*16))
+            f.write('vec_B' +str(i*step_K))
             if(i==int(step_N/16)-1):
                 f.write(';\n')
             else:
                 f.write(', ')
+   
+    # Declarations for step_K variable
+    if(step_K>1):
+        f.write('__m512 ')
+        for p in range (0,int(step_N/16)):
+            for i in range (1,step_K):
+                f.write('vec_B' +str(i + step_K*p))
+                if(i==step_K-1 and p == int(step_N/16)-1):
+                    f.write(';\n')
+                else:
+                    f.write(', ')
+
+        f.write('__m512 ')
+        for p in range (step_M, step_M*step_K):
+            f.write('vec_A' +str(p))
+            if(p== (step_M*step_K)-1):
+                f.write(';\n')
+            else:
+                f.write(', ')
+
     
+    
+    # Others
     f.write('int i, j, k;\n')
     
     f.write('long long M_full, N_full, K_full;\n')
@@ -170,26 +194,54 @@ def loopOver(step_M,step_N,step_K,Ti,Tj,Tk):
     # k Loop
     f.write('for (k = %s; k < %s; k += %d) {\n' % (k_start,K_Conditional,step_K))
     
+    f.write('vec_A = _mm512_set1_ps(A[i*A_stride + k]);\n')    
     f.write('vec_B = _mm512_load_ps((__m512*)&B[k*B_stride + j]);\n')
     
+    # step_N for B
     if(step_N>16 and (step_N % 16) == 0):
         for j in range (1,int(step_N/16)):
-            f.write('vec_B%d = _mm512_load_ps((__m512*)&B[k*B_stride + (j+%d)]);\n'%(j*16 ,j*16))
+            f.write('vec_B%d = _mm512_load_ps((__m512*)&B[k*B_stride + (j+%d)]);\n'%(j*step_K ,j*16))
     
-    f.write('vec_A = _mm512_set1_ps(A[i*A_stride + k]);\n')
-    for i in range(1, step_M):
-        f.write('vec_A%d = _mm512_set1_ps(A[(i + %d)*A_stride + k]);\n' % (i,i))
+    # step_K for B and A
+    if(step_K>1):
+        # B
+        for p in range (0,int(step_N/16)):
+            for i in range (1,step_K):
+                f.write('vec_B%d = _mm512_load_ps((__m512*)&B[(k+%d)*B_stride + (j+%d)]);\n'%(i + step_K*p, i ,p*16))
+
+        # A
+        skip = True
+        for i in range(step_M):
+            for j in range (step_K):
+                if skip:
+                    skip = False
+                    continue
+                f.write('vec_A%d = _mm512_set1_ps(A[(i+%d)*A_stride + (k+%d)]);\n'%(i*step_K + j, i, j))
+
+    else:
+        # Write for step_M if step_K <=1
+        for i in range(1, step_M):
+            f.write('vec_A%d = _mm512_set1_ps(A[(i + %d)*A_stride + k]);\n' % (i,i))
     
     f.write('vec_C = _mm512_fmadd_ps(vec_A, vec_B, vec_C);\n')
     for i in range(1, step_M):
         f.write('vec_C%d = _mm512_fmadd_ps(vec_A%d, vec_B, vec_C%d);\n' % (i,i, i))
     
+    # step_N for C
     if(step_N>16 and (step_N % 16) == 0):
         for j in range (1,int(step_N/16)):
             for i in range(0, step_M):
                 A_id = '' if i == 0 else i
-                f.write('vec_C%d = _mm512_fmadd_ps(vec_A%s, vec_B%d, vec_C%d);\n' % (step_M * j+ i, str(A_id),16*j,step_M * j+ i))
+                f.write('vec_C%d = _mm512_fmadd_ps(vec_A%s, vec_B%d, vec_C%d);\n' % (step_M * j+ i, str(A_id),j*step_K,step_M * j+ i))
     
+    if (step_K > 1):
+        for p in range (0,int(step_N/16)):
+            for i in range(1,step_K):
+                for j in range (step_M):
+                    if(j+ p*step_M):
+                        f.write('vec_C%d = _mm512_fmadd_ps(vec_A%d, vec_B%d, vec_C%d);\n' %( j+ p*step_M,i*step_M + j, i+p*step_K ,j+ p*step_M) )
+                    else:
+                        f.write('vec_C%s = _mm512_fmadd_ps(vec_A%d, vec_B%d, vec_C%s);\n' %( "",i*step_M + j, i+p*step_K ,"") )   
     
     f.close()
     
