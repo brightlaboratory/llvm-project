@@ -1,3 +1,6 @@
+#include <immintrin.h>	
+#include "output.c"	
+
 #ifndef M1
 #define M1 4096
 #endif // !M1
@@ -217,9 +220,13 @@ void matmul_high_performance_core(
 					for (it1 = it1_start; it1 < it1_end; it1 += M1_Tile) {
 						for (jt1 = jt1_start; jt1 < jt1_end; jt1 += N1_Tile) {
 							for (kt1 = kt2; kt1 < min(K1, kt2 + K2_Tile); kt1 += K1_Tile) {
-								fwd_gemm(&B[kt1 / K1_Tile][jt1 / N1_Tile][0][0],
-									&A[it1 / M1_Tile][kt1 / K1_Tile][0][0],
-									&C[it1 / M1_Tile][jt1 / N1_Tile][0][0]);
+								polydl_lib_matmul_f32_i_8_j_16_k_1_fma(M1_Tile,N1_Tile,K1_Tile,M1_Tile,N1_Tile,K1_Tile,	
+										&A[it1 / M1_Tile][kt1 / K1_Tile][0][0],	
+										&B[kt1 / K1_Tile][jt1 / N1_Tile][0][0],	
+										&C[it1 / M1_Tile][jt1 / N1_Tile][0][0]);
+								// fwd_gemm(&B[kt1 / K1_Tile][jt1 / N1_Tile][0][0],
+								// 	&A[it1 / M1_Tile][kt1 / K1_Tile][0][0],
+								// 	&C[it1 / M1_Tile][jt1 / N1_Tile][0][0]);
 
 							}
 						}
