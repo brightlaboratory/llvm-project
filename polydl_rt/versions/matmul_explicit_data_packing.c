@@ -1,6 +1,3 @@
-#include <immintrin.h>
-#include "output.c"
-
 #ifndef M1
 #define M1 4096
 #endif // !M1
@@ -42,7 +39,6 @@
 #define min(X, Y) (((X) < (Y)) ? (X) : (Y))
 #define max(X, Y) (((X) > (Y)) ? (X) : (Y))
 
-
 double matmul_high_performance_scop(float A[M1][K1], float B[K1][N1], float C[M1][N1], int iters)
 {
 	int it2, jt2, kt2, it1, jt1, kt1, i, j, k;
@@ -83,7 +79,7 @@ double matmul_high_performance_scop(float A[M1][K1], float B[K1][N1], float C[M1
 extern libxsmm_smmfunction fwd_gemm;
 
 void copyToTiledArray(int SIZE1, int SIZE2, int T1, int T2,
-		float A[SIZE1][SIZE2], float A_Tiled[SIZE1 / T1][SIZE2 / T2][T1][T2]) {
+	float A[SIZE1][SIZE2], float A_Tiled[SIZE1 / T1][SIZE2 / T2][T1][T2]) {
 	int it, jt, i, j;
 	for (it = 0; it < SIZE1 / T1; it++) {
 		for (jt = 0; jt < SIZE2 / T2; jt++) {
@@ -97,7 +93,7 @@ void copyToTiledArray(int SIZE1, int SIZE2, int T1, int T2,
 }
 
 void copyFromTiledArray(int SIZE1, int SIZE2, int T1, int T2,
-		float A[SIZE1][SIZE2], float A_Tiled[SIZE1 / T1][SIZE2 / T2][T1][T2]) {
+	float A[SIZE1][SIZE2], float A_Tiled[SIZE1 / T1][SIZE2 / T2][T1][T2]) {
 	int it, jt, i, j;
 	for (it = 0; it < SIZE1 / T1; it++) {
 		for (jt = 0; jt < SIZE2 / T2; jt++) {
@@ -141,37 +137,31 @@ double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1]
 	float(*C_Tiled)[N1 / N1_Tile][M1_Tile][N1_Tile] =
 		(float*)libxsmm_aligned_malloc(M1*N1 * sizeof(float), 2097152);
 
-	printf("iters: %d\n", iters);
+	copyToTiledArray(M1, K1, M1_Tile, K1_Tile, A, A_Tiled);
+	copyToTiledArray(K1, N1, K1_Tile, N1_Tile, B, B_Tiled);
+	copyToTiledArray(M1, N1, M1_Tile, N1_Tile, C, C_Tiled);
+
 	l_start = libxsmm_timer_tick();
 
 	for (i = 0; i < iters; i++) {
-
-		copyToTiledArray(M1, K1, M1_Tile, K1_Tile, A, A_Tiled);
-		copyToTiledArray(K1, N1, K1_Tile, N1_Tile, B, B_Tiled);
-		copyToTiledArray(M1, N1, M1_Tile, N1_Tile, C, C_Tiled);
-
 		matmul_high_performance_core(A_Tiled, B_Tiled, C_Tiled);
-
-		copyFromTiledArray(M1, N1, M1_Tile, N1_Tile, C, C_Tiled);
 	}
 
 	l_end = libxsmm_timer_tick();
 	l_total = libxsmm_timer_duration(l_start, l_end);
 
-
+	copyFromTiledArray(M1, N1, M1_Tile, N1_Tile, C, C_Tiled);
 	libxsmm_free(A_Tiled);
 	libxsmm_free(B_Tiled);
 	libxsmm_free(C_Tiled);
 
 	return l_total;
 }
-// A_stride - > (M1*K1)/K1_Tile
-// B_stride - > (K1 * N1)/N1_Tile
-// C_stride - > (M1 * N1)/ N1_Tile
+
 void matmul_high_performance_core(
-		float A[M1 / M1_Tile][K1 / K1_Tile][M1_Tile][K1_Tile],
-		float B[K1 / K1_Tile][N1 / N1_Tile][K1_Tile][N1_Tile],
-		float C[M1 / M1_Tile][N1 / N1_Tile][M1_Tile][N1_Tile])
+	float A[M1 / M1_Tile][K1 / K1_Tile][M1_Tile][K1_Tile],
+	float B[K1 / K1_Tile][N1 / N1_Tile][K1_Tile][N1_Tile],
+	float C[M1 / M1_Tile][N1 / N1_Tile][M1_Tile][N1_Tile])
 {
 
 #pragma omp parallel 
@@ -189,7 +179,7 @@ void matmul_high_performance_core(
 		it2_start = it2_start + tid * chunk;
 		it2_end = min(it2_start + chunk, M1);
 		//printf("tid = %d, num_threads = %d, it2_start = %d, it2_end = %d\n",
-		// tid, num_threads, it2_start, it2_end);
+			// tid, num_threads, it2_start, it2_end);
 #endif
 
 #ifdef PARALLEL_jt2
@@ -214,6 +204,7 @@ void matmul_high_performance_core(
 				it1_start = it1_start + tid * chunk;
 				it1_end = min(it1_start + chunk, min(M1, it2 + M2_Tile));
 #endif
+
 #ifdef PARALLEL_jt1
 				int chunk = ceil((jt1_end - jt1_start) / (num_threads * 1.0));
 				jt1_start = jt1_start + tid * chunk;
@@ -226,20 +217,9 @@ void matmul_high_performance_core(
 					for (it1 = it1_start; it1 < it1_end; it1 += M1_Tile) {
 						for (jt1 = jt1_start; jt1 < jt1_end; jt1 += N1_Tile) {
 							for (kt1 = kt2; kt1 < min(K1, kt2 + K2_Tile); kt1 += K1_Tile) {
-	// A_stride - > (M1*K1)/K1_Tile
-// B_stride - > (K1 * N1)/N1_Tile
-// C_stride - > (M1 * N1)/ N1_Tile
-	polydl_lib_matmul_f32_i_8_j_16_k_1_fma(M1_Tile,N1_Tile,K1_Tile,M1_Tile,N1_Tile,K1_Tile,
-										&A[it1 / M1_Tile][kt1 / K1_Tile][0][0],
-										&B[kt1 / K1_Tile][jt1 / N1_Tile][0][0],
-										&C[it1 / M1_Tile][jt1 / N1_Tile][0][0]);
-						// for (i = 0; i < M1_Tile; i++)
-						// 	for (j = 0; j < N1_Tile; j++)
-						// 		for (k = 0; k < K1_Tile; k++)
-						// 			C[it1/M1_Tile][jt1 / N1_Tile][i][j] += A[it1 / M1_Tile][kt1 / K1_Tile][i][k] * B[kt1 / K1_Tile][jt1 / N1_Tile][k][j];
-								// fwd_gemm(&B[kt1 / K1_Tile][jt1 / N1_Tile][0][0],
-								// 		&A[it1 / M1_Tile][kt1 / K1_Tile][0][0],
-								// 		&C[it1 / M1_Tile][jt1 / N1_Tile][0][0]);
+								fwd_gemm(&B[kt1 / K1_Tile][jt1 / N1_Tile][0][0],
+									&A[it1 / M1_Tile][kt1 / K1_Tile][0][0],
+									&C[it1 / M1_Tile][jt1 / N1_Tile][0][0]);
 
 							}
 						}

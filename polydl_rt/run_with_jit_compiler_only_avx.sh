@@ -22,7 +22,7 @@ python microkernel_codeGenerator.py ${Step_M} ${Step_N} ${Step_K} 0 0 0
 sh delete_bins.sh 
 sh create_lib.sh &>temp
 sh compile_main.sh &>temp
-./a.out $M $N $K 5000000 &> run_output
+./a.out $M $N $K 1000000 &> run_output
 GFLOPS=`cat run_output | grep GFLOPS | cut -d" " -f 1`
 echo "GFLOPS="${GFLOPS}
 # exit

@@ -22,7 +22,7 @@ env = PolyDL_Env(problem_size[0])
 # Set up Action and State space
 state_shape = (9,)
 action_space = list(range(19))
-action_space = [6,7,8,15,16,17]
+action_space = [6,7,8,15,16,17,18]
 action_shape = len(action_space)
 env._get_state()
 print(action_space)
@@ -45,8 +45,8 @@ def create_model(state_shape,out_shape):
     return model
 
 # Initializing Variables
-num_episodes = 10
-max_steps_per_episode = 50
+num_episodes = 500
+max_steps_per_episode = 60
 
 learning_rate = 0.1
 discount_rate = 0.99
@@ -54,7 +54,7 @@ discount_rate = 0.99
 exploration_rate = 1
 max_exploration_rate = 1
 min_exploration_rate = 0.01
-exploration_decay_rate = 0.001
+exploration_decay_rate = 0.005
 
 print_reward = []
 memoization_list = []
@@ -72,17 +72,22 @@ for episode in range(num_episodes):
 
     # print("State Shape", state)
     print("Model ", model.predict(state))
-    exit
+    # exit
 
     #Total Reward will be the learning curve
     totalReward = 0
+
+    print_to_csv = []
+
+    with open('your_file.csv', 'a+') as f:
+        f.write("Episode count -> %s \n" % episode)
 
     for step in range(max_steps_per_episode):
 
         #explore or exploit
         exploration_rate_threshold = random.uniform(0,1)
         if exploration_rate_threshold < exploration_rate:
-            action = random.sample(list(range(6)), 1)[0]
+            action = random.sample(list(range(7)), 1)[0]
             # action = np.argmax(model.predict(state)[0])
         else:
             action = np.argmax(model.predict(state)[0])
@@ -110,16 +115,30 @@ for episode in range(num_episodes):
         
         #Updating weights into target model
         state = new_state
-        weights = model.get_weights()
-        target_weights = target_model.get_weights()
-        for i in range(len(target_weights)):
-            target_weights[i] = weights[i] * 0.1 + target_weights[i] * 0.9
-        target_model.set_weights(target_weights)
+
+        if not(step%10):
+            weights = model.get_weights()
+            target_weights = target_model.get_weights()
+            for i in range(len(target_weights)):
+                target_weights[i] = weights[i] * 0.9 + target_weights[i] * 0.1
+            target_model.set_weights(target_weights)
+
+        # print_to_csv.append(env._currentGFlops())
+        with open('your_file.csv', 'a+') as f:
+            for item in state[0]:
+                f.write("%s," % item)
+            f.write("%s," %env._currentGFlops())
+            f.write("\n")
 
     print_reward.append(totalReward)
     
     #Decaying the exploration rate after every episode
     exploration_rate = min_exploration_rate + \
     (max_exploration_rate - min_exploration_rate)* np.exp(-exploration_decay_rate*episode)
+
+    # with open('your_file.csv', 'a+') as f:
+    #     for item in print_to_csv:
+    #         f.write("%s," % item)
+    #     f.write("\n")
 
 print(print_reward)

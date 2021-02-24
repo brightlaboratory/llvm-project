@@ -37,7 +37,7 @@ class PolyDL_Env():
         self.ub_List = None
 
         # action space
-        self.action_space = [6,7,8,15,16,17] #list(range(19))
+        self.action_space = [6,7,8,15,16,17,18] #list(range(19))
 
         self._reset()
     
@@ -110,12 +110,12 @@ class PolyDL_Env():
     
     def _step(self,action):
         current_state = self._get_state()
-        new_state = [0]*19
+        # new_state = [0]*19
         print("action ",action)
         idx = self.action_space[action]
         
         if idx == 18:
-            return current_state, self.GFLOPS
+            return current_state, self.reward, self.done
         
         if idx > 8:
             current_state[idx%9]= max( self.lb_List[idx%9], int(current_state[idx%9]/2))
@@ -141,3 +141,6 @@ class PolyDL_Env():
 
         self.cur_step = current_state
         return self.cur_step, self.reward, self.done
+    
+    def _currentGFlops(self):
+        return self.GFLOPS
