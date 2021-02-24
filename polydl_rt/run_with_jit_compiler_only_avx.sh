@@ -1,11 +1,12 @@
 #!/bin/bash
 
 export OMP_NUM_THREADS=1
-
 set +x
-M=32
-N=32
-K=32
+M=64
+N=64
+K=64
+
+OUTPUT=perf_${M}_${N}_${K}.csv
 
 Outer_Mj=$1
 Outer_Nj=$2
@@ -24,5 +25,7 @@ sh create_lib.sh &>temp
 sh compile_main.sh &>temp
 ./a.out $M $N $K 1000000 &> run_output
 GFLOPS=`cat run_output | grep GFLOPS | cut -d" " -f 1`
+ERROR=`cat run_output | grep "inf-norm of comp. abs. error" | cut -d: -f 2`
 echo "GFLOPS="${GFLOPS}
+echo  "${Step_M}_${Step_N}_${Step_K},${GFLOPS},${ERROR}" >> ${OUTPUT}
 # exit
