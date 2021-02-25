@@ -225,13 +225,13 @@ def loopOver(step_M,step_N,step_K,Ti,Tj,Tk):
     
     f.write('vec_C = _mm512_fmadd_ps(vec_A, vec_B, vec_C);\n')
     for i in range(1, step_M):
-        f.write('vec_C%d = _mm512_fmadd_ps(vec_A%d, vec_B, vec_C%d);\n' % (i,i, i))
+        f.write('vec_C%d = _mm512_fmadd_ps(vec_A%d, vec_B, vec_C%d);\n' % (i,i*step_K, i))
     
     # step_N for C
     if(step_N>16 and (step_N % 16) == 0):
         for j in range (1,int(step_N/16)):
             for i in range(0, step_M):
-                A_id = '' if i == 0 else i
+                A_id = '' if i == 0 else i*step_K
                 f.write('vec_C%d = _mm512_fmadd_ps(vec_A%s, vec_B%d, vec_C%d);\n' % (step_M * j+ i, str(A_id),j*step_K,step_M * j+ i))
     
     if (step_K > 1):
@@ -239,9 +239,9 @@ def loopOver(step_M,step_N,step_K,Ti,Tj,Tk):
             for i in range(1,step_K):
                 for j in range (step_M):
                     if(j+ p*step_M):
-                        f.write('vec_C%d = _mm512_fmadd_ps(vec_A%d, vec_B%d, vec_C%d);\n' %( j+ p*step_M,i*step_M + j, i+p*step_K ,j+ p*step_M) )
+                        f.write('vec_C%d = _mm512_fmadd_ps(vec_A%d, vec_B%d, vec_C%d);\n' %( j+ p*step_M,((i*step_M + j)*step_K + i)%(step_M*step_K), i+p*step_K ,j+ p*step_M) )
                     else:
-                        f.write('vec_C%s = _mm512_fmadd_ps(vec_A%d, vec_B%d, vec_C%s);\n' %( "",i*step_M + j, i+p*step_K ,"") )   
+                        f.write('vec_C%s = _mm512_fmadd_ps(vec_A%d, vec_B%d, vec_C%s);\n' %( "",((i*step_M + j)*step_K + i)%(step_M*step_K), i+p*step_K ,"") )   
     
     f.close()
     
