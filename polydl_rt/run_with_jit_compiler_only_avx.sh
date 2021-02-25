@@ -26,6 +26,7 @@ sh compile_main.sh &>temp
 ./a.out $M $N $K 1000 &> run_output
 GFLOPS=`cat run_output | grep GFLOPS | cut -d" " -f 1`
 ERROR=`cat run_output | grep "inf-norm of comp. abs. error" | cut -d: -f 2`
+RELERROR=`cat run_output | grep "inf-norm of comp. rel. error" | cut -d: -f 2`
 echo "GFLOPS="${GFLOPS}
-echo  "${Step_M}_${Step_N}_${Step_K},${GFLOPS},${ERROR}" >> ${OUTPUT}
+echo  "${Step_M}_${Step_N}_${Step_K},${GFLOPS},${ERROR},${RELERROR}" >> ${OUTPUT}
 # exit
