@@ -140,20 +140,21 @@ double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1]
 	float(*C_Tiled)[N1 / N1_Tile][M1_Tile][N1_Tile] =
 		(float*)libxsmm_aligned_malloc(M1*N1 * sizeof(float), 2097152);
 
-	copyToTiledArray(M1, K1, M1_Tile, K1_Tile, A, A_Tiled);
-	copyToTiledArray(K1, N1, K1_Tile, N1_Tile, B, B_Tiled);
-	copyToTiledArray(M1, N1, M1_Tile, N1_Tile, C, C_Tiled);
-
 	l_start = libxsmm_timer_tick();
 
 	for (i = 0; i < iters; i++) {
+                copyToTiledArray(M1, K1, M1_Tile, K1_Tile, A, A_Tiled);
+                copyToTiledArray(K1, N1, K1_Tile, N1_Tile, B, B_Tiled);
+                copyToTiledArray(M1, N1, M1_Tile, N1_Tile, C, C_Tiled);
+
 		matmul_high_performance_core(A_Tiled, B_Tiled, C_Tiled);
+
+                copyFromTiledArray(M1, N1, M1_Tile, N1_Tile, C, C_Tiled);
 	}
 
 	l_end = libxsmm_timer_tick();
 	l_total = libxsmm_timer_duration(l_start, l_end);
 
-	copyFromTiledArray(M1, N1, M1_Tile, N1_Tile, C, C_Tiled);
 	libxsmm_free(A_Tiled);
 	libxsmm_free(B_Tiled);
 	libxsmm_free(C_Tiled);
@@ -225,8 +226,8 @@ void matmul_high_performance_core(
 										&B[kt1 / K1_Tile][jt1 / N1_Tile][0][0],	
 										&C[it1 / M1_Tile][jt1 / N1_Tile][0][0]);
 								// fwd_gemm(&B[kt1 / K1_Tile][jt1 / N1_Tile][0][0],
-								// 	&A[it1 / M1_Tile][kt1 / K1_Tile][0][0],
-								// 	&C[it1 / M1_Tile][jt1 / N1_Tile][0][0]);
+								 //	&A[it1 / M1_Tile][kt1 / K1_Tile][0][0],
+								 //	&C[it1 / M1_Tile][jt1 / N1_Tile][0][0]);
 
 							}
 						}
