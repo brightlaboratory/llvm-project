@@ -5,9 +5,9 @@ M=$1
 N=$2
 K=$3
 
-Step_M=8
+Step_M=4
 Step_N=32
-Step_K=8
+Step_K=1
 
 OUTPUT_FILE=perf_$1_$2_$3.csv
 
@@ -32,12 +32,12 @@ do
  
 
 
-for (( Step_M_i=2; Step_M_i<=$Step_M; Step_M_i=Step_M_i*2))
+for (( Step_M_i=4; Step_M_i<=$Step_M; Step_M_i=Step_M_i*2))
 do  
    if [ `expr $Step_M % ${Step_M_i}` -eq 0 ]
    then
 
-   for (( Step_N_j=16; Step_N_j<=$Step_N; Step_N_j=Step_N_j*2))
+   for (( Step_N_j=32; Step_N_j<=$Step_N; Step_N_j=Step_N_j*2))
    do  
       if [ `expr $Step_N % ${Step_N_j}` -eq 0 ]
       then
@@ -55,8 +55,10 @@ make clean
 make version_file=versions/matmul_explicit_data_packing.c MACROFLAGS="-DM1=${M} -DN1=${N} -DK1=${K} -DNUM_ITERS=100 -DM2_Tile=${Outer_Mj} -DN2_Tile=${Outer_Nj} -DK2_Tile=${Outer_Kj} -DM1_Tile=${Outer_Mi} -DN1_Tile=${Outer_Ni} -DK1_Tile=${Outer_Ki}"
 ./matmul &> run_output
 GFLOPS=`cat run_output | grep GFLOPS | cut -d"=" -f 2`
+ERROR=`cat run_output | grep "inf-norm of comp. abs. error" | cut -d: -f 2`
+RELERROR=`cat run_output | grep "inf-norm of comp. rel. error" | cut -d: -f 2`
 echo ${Outer_Mj},${Outer_Nj},${Outer_Kj},${Outer_Mi},${Outer_Ni},${Outer_Ki},${Step_M_i},${Step_N_j},${Step_K_k},${GFLOPS}
-echo ${Outer_Mj},${Outer_Nj},${Outer_Kj},${Outer_Mi},${Outer_Ni},${Outer_Ki},${Step_M_i},${Step_N_j},${Step_K_k},${GFLOPS} >> ${OUTPUT_FILE}
+echo ${Outer_Mj},${Outer_Nj},${Outer_Kj},${Outer_Mi},${Outer_Ni},${Outer_Ki},${Step_M_i},${Step_N_j},${Step_K_k},${ERROR},${RELERROR},${GFLOPS} >> ${OUTPUT_FILE}
 # exit
           	 fi
         	done
