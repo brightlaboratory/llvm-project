@@ -21,7 +21,7 @@ cmake -G Ninja ../llvm \
 cmake --build . --target check-mlir
 
 
-### File Description
+File Description
 
 1. run_with_jit_compiler.sh
      
