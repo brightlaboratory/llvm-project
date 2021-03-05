@@ -20,3 +20,8 @@ cmake -G Ninja ../llvm \
 
 cmake --build . --target check-mlir
 
+File Description:
+run_with_jit_compiler.sh : This file Takes the outer and Inner tile sizes with Unrolling factors. Generate the Code variants using JIT compiler and execute via tha explicit data packing file route.
+run_with_jit_compiler_only_avx.sh : This file takes only Unroll factor and generate code variant using JIT compiler and execute the file.
+run_with_matmul_avx_variants.sh : This file generates various combinations of Outer and Inner tile sizes along with unrolling factors and run the JIT compiler via executing the explicit data packing file route.
+

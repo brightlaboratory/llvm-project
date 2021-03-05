@@ -108,6 +108,7 @@ def declaration(step_M,step_N,step_K, Ti, Tj, Tk):
     
     # Others
     f.write('int i, j, k;\n')
+    f.write('int i_aux, j_aux;\n')
     
     f.write('long long M_full, N_full, K_full;\n')
     if(Ti and Tj and Tk):
@@ -117,6 +118,7 @@ def declaration(step_M,step_N,step_K, Ti, Tj, Tk):
     else:
         f.write('M_full = (M / %d) * %d ;\n' %(step_M,step_M))
         f.write('N_full = (N / %d) * %d ;\n' %(step_N,step_N))
+        f.write('K_full = (K / %d) * %d ;\n' %(step_K,step_K))
     
     # f.write('printf("command-line arguments: %d ,%d ,%d, %d, %d, %d"); \n' %(step_M,step_N,step_K,Ti, Tj, Tk))
     # print("command-line arguments: ",step_M,step_N,step_K,Ti, Tj, Tk,"\n")
@@ -170,7 +172,7 @@ def loopOver(step_M,step_N,step_K,Ti,Tj,Tk):
     else:
         M_Conditional = 'M_full'
         N_Conditional = 'N_full'
-        K_Conditional = 'K'
+        K_Conditional = 'K_full'
         i_start = '0'
         j_start = '0'
         k_start = '0'
@@ -259,10 +261,57 @@ def loopOver(step_M,step_N,step_K,Ti,Tj,Tk):
                 f.write('_mm512_store_ps((__m512*)&C[(i + %d)*C_stride + (j+%d)], vec_C%d);\n' % (i, 16*j ,step_M * j+ i))
 
     f.close()
+
+    # Expanding For Irregular Sizes - K
+    f = open(output, "a+")
+    f.write('for (i_aux = i; i_aux < (i+ %s); i_aux++) {\n' % (step_M))
+    f.write('for (j_aux = j; j_aux < (j+ %s); j_aux++) {\n' % (step_N))
+    f.write('for (k = K_full; k < K; k++) {\n')
+
+    f.write('C[i_aux*C_stride + j_aux] += A[i_aux*A_stride + k] * B[k*B_stride + j_aux];\n')
+
+    f.close()
+
+    loopClosingbracket()
+    loopClosingbracket()
+    loopClosingbracket()
+    
     
     # j Loop
     loopClosingbracket()
+
+    # Expanding For Irregular Sizes - N
+    
+    f = open(output, "a+")
+    f.write('for (i_aux = i; i_aux < (i+ %s); i_aux++) {\n' % (step_M))
+    f.write('for (j = N_full; j < N; j++) {\n')
+    f.write('for (k = 0; k < K; k++) {\n')
+
+    f.write('C[i_aux*C_stride + j] += A[i_aux*A_stride + k] * B[k*B_stride + j];\n')
+
+    f.close()
+
+    loopClosingbracket()
+    loopClosingbracket()
+    loopClosingbracket()
+
+
     # i Loop
+    loopClosingbracket()
+
+    # Expanding For Irregular Sizes - M
+    
+    f = open(output, "a+")
+    f.write('for (i = M_full; i < M ; i++) {\n')
+    f.write('for (j = 0; j < N; j++) {\n')
+    f.write('for (k = 0; k < K; k++) {\n')
+
+    f.write('C[i*C_stride + j] += A[i*A_stride + k] * B[k*B_stride + j];\n')
+
+    f.close()
+
+    loopClosingbracket()
+    loopClosingbracket()
     loopClosingbracket()
     
     # Closing Brackets for Tiled loops
