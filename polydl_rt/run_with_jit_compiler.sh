@@ -3,9 +3,9 @@
 export OMP_NUM_THREADS=1
 
 set +x
-M=34
-N=8464
-K=2560
+M=1024
+N=1024
+K=1024
 
 OUTPUT=perf_${M}_${N}_${K}.csv
 

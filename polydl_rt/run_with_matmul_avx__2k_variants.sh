@@ -52,7 +52,7 @@ do
 
 python microkernel_codeGenerator.py ${Step_M_i} ${Step_N_j} ${Step_K_k} 0 0 0
 make clean
-make version_file=versions/matmul_explicit_data_packing.c MACROFLAGS="-DM1=${M} -DN1=${N} -DK1=${K} -DNUM_ITERS=100 -DM2_Tile=${Outer_Mj} -DN2_Tile=${Outer_Nj} -DK2_Tile=${Outer_Kj} -DM1_Tile=${Outer_Mi} -DN1_Tile=${Outer_Ni} -DK1_Tile=${Outer_Ki}"
+make version_file=versions/matmul_explicit_data_packing.c MACROFLAGS="-Djit_variant -DM1=${M} -DN1=${N} -DK1=${K} -DNUM_ITERS=100 -DM2_Tile=${Outer_Mj} -DN2_Tile=${Outer_Nj} -DK2_Tile=${Outer_Kj} -DM1_Tile=${Outer_Mi} -DN1_Tile=${Outer_Ni} -DK1_Tile=${Outer_Ki}"
 ./matmul &> run_output
 GFLOPS=`cat run_output | grep GFLOPS | cut -d"=" -f 2`
 ERROR=`cat run_output | grep "inf-norm of comp. abs. error" | cut -d: -f 2`
