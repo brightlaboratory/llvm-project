@@ -214,10 +214,10 @@ int main() {
 	printf("SIZE B  (MB): %10.2f MB\n", (double)(K1*N1 * sizeof(float)) / (1024.0*1024.0));
 	printf("SIZE C  (MB): %10.2f MB\n", (double)(M1*N1 * sizeof(float)) / (1024.0*1024.0));
 
-	if (M1 % M2_Tile != 0 || N1 % N2_Tile != 0 || K1 % K2_Tile != 0) {
-		printf("X2_Tile sizes do not divide the problem sizes\n");
-		exit(1);
-	}
+//	if (M1 % M2_Tile != 0 || N1 % N2_Tile != 0 || K1 % K2_Tile != 0) {
+//		printf("X2_Tile sizes do not divide the problem sizes\n");
+//		exit(1);
+//	}
 
 
 	if (M2_Tile % M1_Tile != 0 || N2_Tile % N1_Tile != 0 || K2_Tile % K1_Tile != 0) {

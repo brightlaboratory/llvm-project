@@ -1,5 +1,5 @@
-#include <immintrin.h>	
-#include "output.c"	
+#include <immintrin.h>  
+#include "output.c" 
 
 #ifndef M1
 #define M1 4096
@@ -12,7 +12,6 @@
 #ifndef K1
 #define K1 16384
 #endif // !K1
-
 
 #ifndef M2_Tile
 #define M2_Tile 512
@@ -38,6 +37,9 @@
 #define K1_Tile 64
 #endif // !K1_Tile
 
+#define N_pad ((N1%16)? (16-(N1%16)) : (0))
+
+//#define N_pad 0
 
 #define min(X, Y) (((X) < (Y)) ? (X) : (Y))
 #define max(X, Y) (((X) > (Y)) ? (X) : (Y))
@@ -81,32 +83,106 @@ double matmul_high_performance_scop(float A[M1][K1], float B[K1][N1], float C[M1
 #include <libxsmm.h>
 extern libxsmm_smmfunction fwd_gemm;
 
-void copyToTiledArray(int SIZE1, int SIZE2, int T1, int T2,
-	float A[SIZE1][SIZE2], float A_Tiled[SIZE1 / T1][SIZE2 / T2][T1][T2]) {
+void pad_array(float B[K1][N1], float C[M1][N1], float Bcopy[K1][N1+N_pad], float Ccopy[M1][N1+N_pad]) {
+	int i, j;
+	// printf("***********Padding ***********\n");
+	for (i = 0; i < K1; i++) {
+		for (j = 0; j < N1; j++) {
+			Bcopy[i][j] = B[i][j];
+		}
+
+		for(j = N1; j < N1+N_pad; j++){
+			Bcopy[i][j] = 0;
+		}
+	}
+
+	for (i = 0; i < M1; i++) {
+		for (j = 0; j < N1; j++) {
+			Ccopy[i][j] = C[i][j];
+		}
+
+		for(j = N1; j < N1+N_pad; j++){
+			Ccopy[i][j] = 0;
+		}
+	}
+
+}
+
+void unpad_array(float C[M1][N1], float Ccopy[M1][N1+N_pad]) {
+	int i, j;
+	// printf("***********Ccopy to C [Unpadding] ***********\n");
+
+	for (i = 0; i < M1; i++) {
+		for (j = 0; j < N1; j++) {
+			C[i][j] = Ccopy[i][j];
+		}
+	}
+
+}
+
+void copyToTiledArray(int SIZE1, int SIZE2, int T1, int T2, int pad1, int pad2,
+		float A[SIZE1-pad1][SIZE2-pad2], float A_Tiled[SIZE1 / T1][SIZE2 / T2][T1][T2]) {
 	int it, jt, i, j;
-	for (it = 0; it < SIZE1 / T1; it++) {
-		for (jt = 0; jt < SIZE2 / T2; jt++) {
-			for (i = 0; i < T1; i++) {
+	int realSize1 = (SIZE1 - pad1);
+	int realSize2 = (SIZE2 - pad2);
+
+	int paddedTileDimSize1 = SIZE1 / T1;
+	int paddedTileDimSize2 = SIZE2 / T2;
+
+	for (it = 0; it < paddedTileDimSize1; it++) {
+		int itT1 = it*T1;
+		for (jt = 0; jt < paddedTileDimSize2; jt++) {
+			int jtT2 = jt*T2;
+			int max_i = (itT1 + T1) > realSize1 ? T1 - (itT1 + T1 - realSize1) : T1;
+			for (i = 0; i < max_i; i++) {
+				int max_j = (jtT2 + T2) > realSize2 ? T2 - (jtT2 + T2 - realSize2) : T2;
+				for (j = 0; j < max_j; j++) {
+					A_Tiled[it][jt][i][j] = A[itT1 + i][jtT2 + j];
+				}
+
+				for (j = max_j; j < T2; j++) {
+					A_Tiled[it][jt][i][j] = 0;
+
+				}
+			}
+
+			for (i = max_i; i < T1; i++) {
 				for (j = 0; j < T2; j++) {
-					A_Tiled[it][jt][i][j] = A[it*T1 + i][jt*T2 + j];
+					A_Tiled[it][jt][i][j] = 0;
 				}
 			}
 		}
 	}
 }
 
-void copyFromTiledArray(int SIZE1, int SIZE2, int T1, int T2,
-	float A[SIZE1][SIZE2], float A_Tiled[SIZE1 / T1][SIZE2 / T2][T1][T2]) {
+
+
+void copyFromTiledArray(int SIZE1, int SIZE2, int T1, int T2, int pad1, int pad2,
+		float A[SIZE1-pad1][SIZE2-pad2], float A_Tiled[SIZE1 / T1][SIZE2 / T2][T1][T2]) {
+
 	int it, jt, i, j;
-	for (it = 0; it < SIZE1 / T1; it++) {
-		for (jt = 0; jt < SIZE2 / T2; jt++) {
-			for (i = 0; i < T1; i++) {
-				for (j = 0; j < T2; j++) {
-					A[it*T1 + i][jt*T2 + j] = A_Tiled[it][jt][i][j];
+	int realSize1 = (SIZE1 - pad1);
+	int realSize2 = (SIZE2 - pad2);
+
+	int paddedTileDimSize1 = SIZE1 / T1;
+	int paddedTileDimSize2 = SIZE2 / T2;
+
+	for (it = 0; it < paddedTileDimSize1; it++) {
+		int itT1 = it*T1;
+		for (jt = 0; jt < paddedTileDimSize2; jt++) {
+			int jtT2 = jt*T2;
+			int max_i = (itT1 + T1) > realSize1 ? T1 - (itT1 + T1 - realSize1) : T1;
+			for (i = 0; i < max_i; i++) {
+				int max_j = (jtT2 + T2) > realSize2 ? T2 - (jtT2 + T2 - realSize2) : T2;
+				for (j = 0; j < max_j; j++) {
+					A[itT1 + i][jtT2 + j] = A_Tiled[it][jt][i][j];
 				}
+
 			}
+
 		}
 	}
+
 }
 
 double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1], int iters) {
@@ -132,24 +208,24 @@ double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1]
 #ifdef PARALLEL_jt1
 	printf("jt1 loop is parallel\n");
 #endif
-
+	printf("N_pad = %d\n", N_pad);
 	float(*A_Tiled)[K1 / K1_Tile][M1_Tile][K1_Tile] =
 		(float*)libxsmm_aligned_malloc(M1*K1 * sizeof(float), 2097152);
-	float(*B_Tiled)[N1 / N1_Tile][K1_Tile][N1_Tile] =
-		(float*)libxsmm_aligned_malloc(N1*K1 * sizeof(float), 2097152);
-	float(*C_Tiled)[N1 / N1_Tile][M1_Tile][N1_Tile] =
-		(float*)libxsmm_aligned_malloc(M1*N1 * sizeof(float), 2097152);
+	float(*B_Tiled)[(N1+N_pad) / N1_Tile][K1_Tile][N1_Tile] =
+		(float*)libxsmm_aligned_malloc((N1+N_pad)*K1 * sizeof(float), 2097152);
+	float(*C_Tiled)[(N1+N_pad) / N1_Tile][M1_Tile][N1_Tile] =
+		(float*)libxsmm_aligned_malloc(M1*(N1+N_pad) * sizeof(float), 2097152);
 
 	l_start = libxsmm_timer_tick();
 
 	for (i = 0; i < iters; i++) {
-                copyToTiledArray(M1, K1, M1_Tile, K1_Tile, A, A_Tiled);
-                copyToTiledArray(K1, N1, K1_Tile, N1_Tile, B, B_Tiled);
-                copyToTiledArray(M1, N1, M1_Tile, N1_Tile, C, C_Tiled);
+		copyToTiledArray(M1, K1, M1_Tile, K1_Tile, 0, 0, A, A_Tiled);
+		copyToTiledArray(K1, N1+N_pad, K1_Tile, N1_Tile, 0, N_pad, B, B_Tiled);
+		copyToTiledArray(M1, N1+N_pad, M1_Tile, N1_Tile, 0, N_pad, C, C_Tiled);
 
 		matmul_high_performance_core(A_Tiled, B_Tiled, C_Tiled);
 
-                copyFromTiledArray(M1, N1, M1_Tile, N1_Tile, C, C_Tiled);
+		copyFromTiledArray(M1, N1+N_pad, M1_Tile, N1_Tile, 0, N_pad, C, C_Tiled);
 	}
 
 	l_end = libxsmm_timer_tick();
@@ -163,9 +239,9 @@ double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1]
 }
 
 void matmul_high_performance_core(
-	float A[M1 / M1_Tile][K1 / K1_Tile][M1_Tile][K1_Tile],
-	float B[K1 / K1_Tile][N1 / N1_Tile][K1_Tile][N1_Tile],
-	float C[M1 / M1_Tile][N1 / N1_Tile][M1_Tile][N1_Tile])
+		float A[M1 / M1_Tile][K1 / K1_Tile][M1_Tile][K1_Tile],
+		float B[K1 / K1_Tile][(N1+N_pad) / N1_Tile][K1_Tile][N1_Tile],
+		float C[M1 / M1_Tile][(N1+N_pad) / N1_Tile][M1_Tile][N1_Tile])
 {
 
 #pragma omp parallel 
@@ -176,24 +252,23 @@ void matmul_high_performance_core(
 		int it2_start = 0;
 		int it2_end = M1;
 		int jt2_start = 0;
-		int jt2_end = N1;
+		int jt2_end = N1+N_pad;
 
 #ifdef PARALLEL_it2
 		int chunk = ceil((it2_end - it2_start) / (num_threads * 1.0));
 		it2_start = it2_start + tid * chunk;
 		it2_end = min(it2_start + chunk, M1);
 		//printf("tid = %d, num_threads = %d, it2_start = %d, it2_end = %d\n",
-			// tid, num_threads, it2_start, it2_end);
+		// tid, num_threads, it2_start, it2_end);
 #endif
 
 #ifdef PARALLEL_jt2
 		int chunk = ceil((jt2_end - jt2_start) / (num_threads * 1.0));
 		jt2_start = jt2_start + tid * chunk;
-		jt2_end = min(jt2_start + chunk, N1);
+		jt2_end = min(jt2_start + chunk, N1+N_pad);
 		// printf("tid = %d, num_threads = %d, jt2_start = %d, jt2_end = %d\n",
 		// tid, num_threads, jt2_start, jt2_end);
 #endif
-
 
 		for (it2 = it2_start; it2 < it2_end; it2 += M2_Tile) {
 			for (jt2 = jt2_start; jt2 < jt2_end; jt2 += N2_Tile) {
@@ -201,7 +276,7 @@ void matmul_high_performance_core(
 				int it1_start = it2;
 				int it1_end = min(M1, it2 + M2_Tile);
 				int jt1_start = jt2;
-				int jt1_end = min(N1, jt2 + N2_Tile);
+				int jt1_end = min(N1+N_pad, jt2 + N2_Tile);
 
 #ifdef PARALLEL_it1
 				int chunk = ceil((it1_end - it1_start) / (num_threads * 1.0));
@@ -212,7 +287,7 @@ void matmul_high_performance_core(
 #ifdef PARALLEL_jt1
 				int chunk = ceil((jt1_end - jt1_start) / (num_threads * 1.0));
 				jt1_start = jt1_start + tid * chunk;
-				jt1_end = min(jt1_start + chunk, min(N1, jt2 + N2_Tile));
+				jt1_end = min(jt1_start + chunk, min(N1+N_pad, jt2 + N2_Tile));
 #endif
 
 				for (kt2 = 0; kt2 < K1; kt2 += K2_Tile) {
@@ -221,19 +296,18 @@ void matmul_high_performance_core(
 					for (it1 = it1_start; it1 < it1_end; it1 += M1_Tile) {
 						for (jt1 = jt1_start; jt1 < jt1_end; jt1 += N1_Tile) {
 							for (kt1 = kt2; kt1 < min(K1, kt2 + K2_Tile); kt1 += K1_Tile) {
-								#ifdef jit_variant
-								polydl_lib_matmul_f32_i_8_j_16_k_1_fma(M1_Tile,N1_Tile,K1_Tile,K1_Tile,N1_Tile,N1_Tile,	
-										&A[it1 / M1_Tile][kt1 / K1_Tile][0][0],	
-										&B[kt1 / K1_Tile][jt1 / N1_Tile][0][0],	
+#ifdef jit_variant
+								polydl_lib_matmul_f32_i_8_j_16_k_1_fma(M1_Tile,N1_Tile,K1_Tile,K1_Tile,N1_Tile,N1_Tile, 
+										&A[it1 / M1_Tile][kt1 / K1_Tile][0][0], 
+										&B[kt1 / K1_Tile][jt1 / N1_Tile][0][0], 
 										&C[it1 / M1_Tile][jt1 / N1_Tile][0][0]);
-								#endif
+#endif
 
-								#ifndef jit_variant
+#ifndef jit_variant
 								fwd_gemm(&B[kt1 / K1_Tile][jt1 / N1_Tile][0][0],
-								 	&A[it1 / M1_Tile][kt1 / K1_Tile][0][0],
-								 	&C[it1 / M1_Tile][jt1 / N1_Tile][0][0]);
-								#endif
-								
+										&A[it1 / M1_Tile][kt1 / K1_Tile][0][0],
+										&C[it1 / M1_Tile][jt1 / N1_Tile][0][0]);
+#endif
 
 							}
 						}
@@ -247,3 +321,4 @@ void matmul_high_performance_core(
 }
 
 #endif
+
