@@ -1,18 +1,17 @@
 #include <stdio.h>
 #include <immintrin.h>
-#include <mkldnn.h>
 #include <omp.h>
 #include "output.c"
 
 
 void print_f32_polydl(
-	long long int rank, long long int offset,
-	long long int size1, long long int size2,
-	long long int stride1, long long int stride2,
-	void *base) {
+		long long int rank, long long int offset,
+		long long int size1, long long int size2,
+		long long int stride1, long long int stride2,
+		void *base) {
 	int i, j;
 	printf("rank = %ld, offset = %ld, size1 = %ld, size2 = %ld, stride1 = %ld, stride2 = %ld",
-		rank, offset, size1, size2, stride1, stride2);
+			rank, offset, size1, size2, stride1, stride2);
 	float *ptr = (float*)base;
 	printf("%f ", ptr[0]);
 	printf("%f ", ptr[2097152]);
@@ -27,13 +26,13 @@ void print_f32_polydl(
 
 #ifndef USE_AVX512
 void polydl_lib_matmul_f32(
-	long long int M, long long int N, long long int K,
-	long long int A_stride, long long int B_stride, long long int C_stride,
-	float *A, float *B, float *C) {
+		long long int M, long long int N, long long int K,
+		long long int A_stride, long long int B_stride, long long int C_stride,
+		float *A, float *B, float *C) {
 
 	printf("In polydl_lib_matmul_f32 function\n");
 	printf("M = %ld, N = %ld, K = %ld, A_stride = %ld, B_stride = %ld, C_stride = %ld\n",
-		M, N, K, A_stride, B_stride, C_stride);
+			M, N, K, A_stride, B_stride, C_stride);
 	printf("A = %f, B = %f \n", A[0],B[0]);
 
 	int i, j, k;
@@ -51,32 +50,19 @@ void polydl_lib_matmul_f32(
 #ifdef USE_AVX512
 
 void polydl_lib_matmul_f32(long long int M, long long int N, long long int K,
-	long long int A_stride, long long int B_stride, long long int C_stride,
-	float *A, float *B, float *C) {
+		long long int A_stride, long long int B_stride, long long int C_stride,
+		float *A, float *B, float *C) {
 
-	int useoneDNN = 0;
 
-	if (useoneDNN) {
-                // printf("oneDNN\n");
-                //omp_set_dynamic(0);
-                //omp_set_num_threads(1);
-		dnnl_sgemm('N', 'N', M, N, K, 1.0, A, A_stride,
-			B, B_stride, 1.0, C, C_stride);
-			printf("%f, %f, %f \n",A[10],B[10], C[10] );
-	}
-	else {
-		// i_8_j_16_k_1 is empirically found to be the highest performing version
-		polydl_lib_matmul_f32_i_8_j_16_k_1_fma(M, N, K,
+	polydl_lib_matmul_f32_i_8_j_16_k_1_fma(M, N, K,
 			A_stride, B_stride, C_stride, A, B, C);
-			// printf("AVX\n");
-			// printf("%f, %f, %f \n",A[10],B[10], C[10] );
-	}
+	// printf("%f, %f, %f \n",A[10],B[10], C[10] );
 }
 
 void polydl_lib_matmul_f32_naive(
-	long long int M, long long int N, long long int K,
-	long long int A_stride, long long int B_stride, long long int C_stride,
-	float *A, float *B, float *C) {
+		long long int M, long long int N, long long int K,
+		long long int A_stride, long long int B_stride, long long int C_stride,
+		float *A, float *B, float *C) {
 
 	int i, j, k;
 	for (i = 0; i < M; i++) {
@@ -90,9 +76,9 @@ void polydl_lib_matmul_f32_naive(
 }
 
 void polydl_lib_matmul_f32_i_1_j_16_k_1(
-	long long int M, long long int N, long long int K,
-	long long int A_stride, long long int B_stride, long long int C_stride,
-	float *A, float *B, float *C) {
+		long long int M, long long int N, long long int K,
+		long long int A_stride, long long int B_stride, long long int C_stride,
+		float *A, float *B, float *C) {
 
 	__m512 vec_C = _mm512_setzero_ps();
 	__m512 vec_A = _mm512_setzero_ps();
@@ -107,10 +93,10 @@ void polydl_lib_matmul_f32_i_1_j_16_k_1(
 			for (j = 0; j < N; j += 16) {
 
 				/* Equivalent to:
-				C[i][j] += A[i][k]* B[k][j];
-				C[i][j+1] += A[i][k]* B[k][j+1];
-				C[i][j+2] += A[i][k]* B[k][j+2];
-				...*/
+				   C[i][j] += A[i][k]* B[k][j];
+				   C[i][j+1] += A[i][k]* B[k][j+1];
+				   C[i][j+2] += A[i][k]* B[k][j+2];
+				   ...*/
 
 				vec_B = _mm512_load_ps((__m512*)&B[k*B_stride + j]);
 
@@ -123,9 +109,9 @@ void polydl_lib_matmul_f32_i_1_j_16_k_1(
 }
 
 void polydl_lib_matmul_f32_i_4_j_16_k_1(
-	long long int M, long long int N, long long int K,
-	long long int A_stride, long long int B_stride, long long int C_stride,
-	float *A, float *B, float *C) {
+		long long int M, long long int N, long long int K,
+		long long int A_stride, long long int B_stride, long long int C_stride,
+		float *A, float *B, float *C) {
 
 	__m512 vec_C = _mm512_setzero_ps();
 	__m512 vec_A = _mm512_setzero_ps();
@@ -170,9 +156,9 @@ void polydl_lib_matmul_f32_i_4_j_16_k_1(
 
 
 void polydl_lib_matmul_f32_i_8_j_16_k_1(
-	long long int M, long long int N, long long int K,
-	long long int A_stride, long long int B_stride, long long int C_stride,
-	float *A, float *B, float *C) {
+		long long int M, long long int N, long long int K,
+		long long int A_stride, long long int B_stride, long long int C_stride,
+		float *A, float *B, float *C) {
 
 	__m512 vec_C;
 	__m512 vec_A;
@@ -229,9 +215,9 @@ void polydl_lib_matmul_f32_i_8_j_16_k_1(
 	}
 }
 void polydl_lib_matmul_f32_i_8_j_16_k_1_fma(
-	long long int M, long long int N, long long int K,
-	long long int A_stride, long long int B_stride, long long int C_stride,
-	float *A, float *B, float *C) ;
+		long long int M, long long int N, long long int K,
+		long long int A_stride, long long int B_stride, long long int C_stride,
+		float *A, float *B, float *C) ;
 // void polydl_lib_matmul_f32_i_8_j_16_k_1_fma(
 // 	long long int M, long long int N, long long int K,
 // 	long long int A_stride, long long int B_stride, long long int C_stride,
@@ -318,20 +304,20 @@ void polydl_lib_matmul_f32_i_8_j_16_k_1_fma(
 
 
 void polydl_lib_matmul_f32_i_16_j_16_k_1(
-	long long int M, long long int N, long long int K,
-	long long int A_stride, long long int B_stride, long long int C_stride,
-	float *A, float *B, float *C) {
+		long long int M, long long int N, long long int K,
+		long long int A_stride, long long int B_stride, long long int C_stride,
+		float *A, float *B, float *C) {
 
 	__m512 vec_C;
 	__m512 vec_A;
 	__m512 vec_B;
 
 	__m512 vec_C_1, vec_C_2, vec_C_3, vec_C_4, vec_C_5, vec_C_6, vec_C_7,
-		vec_C_8, vec_C_9, vec_C_10, vec_C_11, vec_C_12, vec_C_13, vec_C_14,
-		vec_C_15;
+	       vec_C_8, vec_C_9, vec_C_10, vec_C_11, vec_C_12, vec_C_13, vec_C_14,
+	       vec_C_15;
 	__m512 vec_A_1, vec_A_2, vec_A_3, vec_A_4, vec_A_5, vec_A_6, vec_A_7,
-		vec_A_8, vec_A_9, vec_A_10, vec_A_11, vec_A_12, vec_A_13, vec_A_14,
-		vec_A_15;
+	       vec_A_8, vec_A_9, vec_A_10, vec_A_11, vec_A_12, vec_A_13, vec_A_14,
+	       vec_A_15;
 
 	int i, j, k;
 	for (i = 0; i < M; i += 16) {
