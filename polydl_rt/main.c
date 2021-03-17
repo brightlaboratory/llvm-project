@@ -118,7 +118,7 @@ double rtclock() {
 int main(int argc, char** argv) {
 	long long int M = 32, N = 32, K = 32;
 
-	int iters = 100;
+	int iters = 1000;
 	int i = 1;
 	if (argc > i) M = atoi(argv[i++]);
 	if (argc > i) N = atoi(argv[i++]);

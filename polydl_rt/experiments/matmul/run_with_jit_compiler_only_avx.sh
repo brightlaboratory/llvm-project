@@ -13,6 +13,7 @@ Step_N=$5
 Step_K=$6
 
 python ../../microkernel_codeGenerator.py ${Step_M} ${Step_N} ${Step_K} 0 0 0
+cp output.c ../../
 sh delete_bins.sh 
 sh create_lib.sh &>temp
 sh compile_main.sh &>temp
