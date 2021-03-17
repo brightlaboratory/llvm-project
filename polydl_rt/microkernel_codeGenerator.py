@@ -303,10 +303,32 @@ def loopOver(step_M,step_N,step_K,Ti,Tj,Tk):
     
     f = open(output, "a+")
     f.write('for (i = M_full; i < M ; i++) {\n')
-    f.write('for (j = 0; j < N; j++) {\n')
+    f.write('for (j = 0; j < N_full; j += 16) { \n')
+    f.write('vec_C = _mm512_load_ps((__m512*)&C[i*C_stride + j]);\n')
+    f.write('for (k = 0; k < K_full; k += 1) {\n')
+    f.write('vec_A = _mm512_set1_ps(A[i*A_stride + k]);\n')
+    f.write('vec_B = _mm512_load_ps((__m512*)&B[k*B_stride + j]);\n')
+    f.write('vec_C = _mm512_fmadd_ps(vec_A, vec_B, vec_C);\n')
+    f.write('}\n')
+    f.write('_mm512_store_ps((__m512*)&C[i*C_stride + j], vec_C);\n')
+    f.write('for (i_aux = i; i_aux < (i+ 1); i_aux++) {\n')
+    f.write('for (j_aux = j; j_aux < (j+ 16); j_aux++) {\n')
+    f.write('for (k = K_full; k < K; k++) {\n')
+    f.write('C[i_aux*C_stride + j_aux] += A[i_aux*A_stride + k] * B[k*B_stride + j_aux];\n')
+    f.write('}\n')
+    f.write('}\n')
+    f.write('}\n')
+    f.write('}\n')
+    f.write('for (j = N_full; j < N; j++) {\n')
     f.write('for (k = 0; k < K; k++) {\n')
-
     f.write('C[i*C_stride + j] += A[i*A_stride + k] * B[k*B_stride + j];\n')
+
+
+    #**************************
+    # f.write('for (j = 0; j < N; j++) {\n')
+    # f.write('for (k = 0; k < K; k++) {\n')
+
+    # f.write('C[i*C_stride + j] += A[i*A_stride + k] * B[k*B_stride + j];\n')
 
     f.close()
 

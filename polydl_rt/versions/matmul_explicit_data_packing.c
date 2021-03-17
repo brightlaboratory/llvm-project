@@ -37,9 +37,13 @@
 #define K1_Tile 64
 #endif // !K1_Tile
 
+#define M_pad ((M1%2)? (2-(M1%2)) : (0))
 #define N_pad ((N1%16)? (16-(N1%16)) : (0))
+#define K_pad ((K1%2)? (2-(K1%2)) : (0))
 
-//#define N_pad 0
+// #define M_pad 0
+// #define N_pad 0
+// #define K_pad 0
 
 #define min(X, Y) (((X) < (Y)) ? (X) : (Y))
 #define max(X, Y) (((X) > (Y)) ? (X) : (Y))
@@ -209,23 +213,23 @@ double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1]
 	printf("jt1 loop is parallel\n");
 #endif
 	printf("N_pad = %d\n", N_pad);
-	float(*A_Tiled)[K1 / K1_Tile][M1_Tile][K1_Tile] =
-		(float*)libxsmm_aligned_malloc(M1*K1 * sizeof(float), 2097152);
+	float(*A_Tiled)[(K1+K_pad) / K1_Tile][M1_Tile][K1_Tile] =
+		(float*)libxsmm_aligned_malloc((M1+M_pad)*(K1+K_pad) * sizeof(float), 2097152);
 	float(*B_Tiled)[(N1+N_pad) / N1_Tile][K1_Tile][N1_Tile] =
-		(float*)libxsmm_aligned_malloc((N1+N_pad)*K1 * sizeof(float), 2097152);
+		(float*)libxsmm_aligned_malloc((N1+N_pad)*(K1+K_pad) * sizeof(float), 2097152);
 	float(*C_Tiled)[(N1+N_pad) / N1_Tile][M1_Tile][N1_Tile] =
-		(float*)libxsmm_aligned_malloc(M1*(N1+N_pad) * sizeof(float), 2097152);
+		(float*)libxsmm_aligned_malloc((M1+M_pad)*(N1+N_pad) * sizeof(float), 2097152);
 
 	l_start = libxsmm_timer_tick();
 
 	for (i = 0; i < iters; i++) {
-		copyToTiledArray(M1, K1, M1_Tile, K1_Tile, 0, 0, A, A_Tiled);
-		copyToTiledArray(K1, N1+N_pad, K1_Tile, N1_Tile, 0, N_pad, B, B_Tiled);
-		copyToTiledArray(M1, N1+N_pad, M1_Tile, N1_Tile, 0, N_pad, C, C_Tiled);
+		copyToTiledArray(M1+M_pad, K1+K_pad, M1_Tile, K1_Tile, M_pad, K_pad, A, A_Tiled);
+		copyToTiledArray(K1+K_pad, N1+N_pad, K1_Tile, N1_Tile, K_pad, N_pad, B, B_Tiled);
+		copyToTiledArray(M1+M_pad, N1+N_pad, M1_Tile, N1_Tile, M_pad, N_pad, C, C_Tiled);
 
 		matmul_high_performance_core(A_Tiled, B_Tiled, C_Tiled);
 
-		copyFromTiledArray(M1, N1+N_pad, M1_Tile, N1_Tile, 0, N_pad, C, C_Tiled);
+		copyFromTiledArray(M1+M_pad, N1+N_pad, M1_Tile, N1_Tile, M_pad, N_pad, C, C_Tiled);
 	}
 
 	l_end = libxsmm_timer_tick();
@@ -239,9 +243,9 @@ double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1]
 }
 
 void matmul_high_performance_core(
-		float A[M1 / M1_Tile][K1 / K1_Tile][M1_Tile][K1_Tile],
-		float B[K1 / K1_Tile][(N1+N_pad) / N1_Tile][K1_Tile][N1_Tile],
-		float C[M1 / M1_Tile][(N1+N_pad) / N1_Tile][M1_Tile][N1_Tile])
+		float A[(M1+M_pad) / M1_Tile][(K1+K_pad) / K1_Tile][M1_Tile][K1_Tile],
+		float B[(K1+K_pad) / K1_Tile][(N1+N_pad) / N1_Tile][K1_Tile][N1_Tile],
+		float C[(M1+M_pad) / M1_Tile][(N1+N_pad) / N1_Tile][M1_Tile][N1_Tile])
 {
 
 #pragma omp parallel 
@@ -250,14 +254,14 @@ void matmul_high_performance_core(
 		int tid = omp_get_thread_num();
 		int num_threads = omp_get_num_threads();
 		int it2_start = 0;
-		int it2_end = M1;
+		int it2_end = M1+M_pad;
 		int jt2_start = 0;
 		int jt2_end = N1+N_pad;
 
 #ifdef PARALLEL_it2
 		int chunk = ceil((it2_end - it2_start) / (num_threads * 1.0));
 		it2_start = it2_start + tid * chunk;
-		it2_end = min(it2_start + chunk, M1);
+		it2_end = min(it2_start + chunk, M1+M_pad);
 		//printf("tid = %d, num_threads = %d, it2_start = %d, it2_end = %d\n",
 		// tid, num_threads, it2_start, it2_end);
 #endif
@@ -274,14 +278,14 @@ void matmul_high_performance_core(
 			for (jt2 = jt2_start; jt2 < jt2_end; jt2 += N2_Tile) {
 
 				int it1_start = it2;
-				int it1_end = min(M1, it2 + M2_Tile);
+				int it1_end = min(M1+M_pad, it2 + M2_Tile);
 				int jt1_start = jt2;
 				int jt1_end = min(N1+N_pad, jt2 + N2_Tile);
 
 #ifdef PARALLEL_it1
 				int chunk = ceil((it1_end - it1_start) / (num_threads * 1.0));
 				it1_start = it1_start + tid * chunk;
-				it1_end = min(it1_start + chunk, min(M1, it2 + M2_Tile));
+				it1_end = min(it1_start + chunk, min(M1+M_pad, it2 + M2_Tile));
 #endif
 
 #ifdef PARALLEL_jt1
@@ -290,12 +294,12 @@ void matmul_high_performance_core(
 				jt1_end = min(jt1_start + chunk, min(N1+N_pad, jt2 + N2_Tile));
 #endif
 
-				for (kt2 = 0; kt2 < K1; kt2 += K2_Tile) {
+				for (kt2 = 0; kt2 < K1+K_pad; kt2 += K2_Tile) {
 
 					// Second level of tiling
 					for (it1 = it1_start; it1 < it1_end; it1 += M1_Tile) {
 						for (jt1 = jt1_start; jt1 < jt1_end; jt1 += N1_Tile) {
-							for (kt1 = kt2; kt1 < min(K1, kt2 + K2_Tile); kt1 += K1_Tile) {
+							for (kt1 = kt2; kt1 < min(K1+K_pad, kt2 + K2_Tile); kt1 += K1_Tile) {
 #ifdef jit_variant
 								polydl_lib_matmul_f32_i_8_j_16_k_1_fma(M1_Tile,N1_Tile,K1_Tile,K1_Tile,N1_Tile,N1_Tile, 
 										&A[it1 / M1_Tile][kt1 / K1_Tile][0][0], 
