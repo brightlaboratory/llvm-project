@@ -54,7 +54,7 @@ void polydl_lib_matmul_f32(long long int M, long long int N, long long int K,
 		float *A, float *B, float *C) {
 
 
-	polydl_lib_matmul_f32_i_8_j_16_k_1_fma(M, N, K,
+	polydl_lib_matmul_f32_fma(M, N, K,
 			A_stride, B_stride, C_stride, A, B, C);
 	// printf("%f, %f, %f \n",A[10],B[10], C[10] );
 }
@@ -214,7 +214,7 @@ void polydl_lib_matmul_f32_i_8_j_16_k_1(
 		}
 	}
 }
-void polydl_lib_matmul_f32_i_8_j_16_k_1_fma(
+void polydl_lib_matmul_f32_fma(
 		long long int M, long long int N, long long int K,
 		long long int A_stride, long long int B_stride, long long int C_stride,
 		float *A, float *B, float *C) ;

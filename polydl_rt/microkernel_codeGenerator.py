@@ -35,7 +35,7 @@ def reset():
 def open_function(step_M,step_N,step_K):
     f = open(output, "a+") 
     # f.write('void polydl_lib_matmul_f32_i_%d_j_%d_k_%d_fma( long long int M, long long int N, long long int K,long long int A_stride, long long int B_stride, long long int C_stride, float *A, float *B, float *C) {\n' %(step_M,step_N,step_K))
-    f.write('void polydl_lib_matmul_f32_i_8_j_16_k_1_fma( long long int M, long long int N, long long int K,long long int A_stride, long long int B_stride, long long int C_stride, float *A, float *B, float *C) {\n')
+    f.write('void polydl_lib_matmul_f32_fma( long long int M, long long int N, long long int K,long long int A_stride, long long int B_stride, long long int C_stride, float *A, float *B, float *C) {\n')
     f.close()
     
 def close_function():
