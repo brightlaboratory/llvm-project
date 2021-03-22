@@ -66,7 +66,7 @@ python ../../microkernel_codeGenerator.py ${Step_M} ${Step_N} ${Step_K} 0 0 0
 cp output.c ../../
 
 EXPERIMENTS_DIR=$PWD
-(cd ../.. && make clean && make version_file=versions/matmul_explicit_data_packing.c MACROFLAGS="-DM1=$M1 -DN1=$N1 -DK1=$K1 -DNUM_ITERS=$iters -DM2_Tile=${M2_Tile} -DN2_Tile=${N2_Tile} -DK2_Tile=${K2_Tile} -DM1_Tile=${M1_Tile} -DN1_Tile=${N1_Tile} -DK1_Tile=${K1_Tile} -DPARALLEL_${PARALLEL_LOOP}")
+(cd ../.. && make clean && make version_file=versions/matmul_explicit_data_packing.c MACROFLAGS="-Djit_variant -DM1=$M1 -DN1=$N1 -DK1=$K1 -DNUM_ITERS=$iters -DM2_Tile=${M2_Tile} -DN2_Tile=${N2_Tile} -DK2_Tile=${K2_Tile} -DM1_Tile=${M1_Tile} -DN1_Tile=${N1_Tile} -DK1_Tile=${K1_Tile} -DPARALLEL_${PARALLEL_LOOP}")
 
 ../../matmul &> run_output
 GFLOPS=`cat run_output |  grep Real_GFLOPS |  cut -d= -f2`
