@@ -87,42 +87,6 @@ double matmul_high_performance_scop(float A[M1][K1], float B[K1][N1], float C[M1
 #include <libxsmm.h>
 extern libxsmm_smmfunction fwd_gemm;
 
-void pad_array(float B[K1][N1], float C[M1][N1], float Bcopy[K1][N1+N_pad], float Ccopy[M1][N1+N_pad]) {
-	int i, j;
-	// printf("***********Padding ***********\n");
-	for (i = 0; i < K1; i++) {
-		for (j = 0; j < N1; j++) {
-			Bcopy[i][j] = B[i][j];
-		}
-
-		for(j = N1; j < N1+N_pad; j++){
-			Bcopy[i][j] = 0;
-		}
-	}
-
-	for (i = 0; i < M1; i++) {
-		for (j = 0; j < N1; j++) {
-			Ccopy[i][j] = C[i][j];
-		}
-
-		for(j = N1; j < N1+N_pad; j++){
-			Ccopy[i][j] = 0;
-		}
-	}
-
-}
-
-void unpad_array(float C[M1][N1], float Ccopy[M1][N1+N_pad]) {
-	int i, j;
-	// printf("***********Ccopy to C [Unpadding] ***********\n");
-
-	for (i = 0; i < M1; i++) {
-		for (j = 0; j < N1; j++) {
-			C[i][j] = Ccopy[i][j];
-		}
-	}
-
-}
 
 void copyToTiledArray(int SIZE1, int SIZE2, int T1, int T2, int pad1, int pad2,
 		float A[SIZE1-pad1][SIZE2-pad2], float A_Tiled[SIZE1 / T1][SIZE2 / T2][T1][T2]) {
@@ -133,6 +97,7 @@ void copyToTiledArray(int SIZE1, int SIZE2, int T1, int T2, int pad1, int pad2,
 	int paddedTileDimSize1 = SIZE1 / T1;
 	int paddedTileDimSize2 = SIZE2 / T2;
 
+#pragma omp parallel for private(jt, i, j)
 	for (it = 0; it < paddedTileDimSize1; it++) {
 		int itT1 = it*T1;
 		for (jt = 0; jt < paddedTileDimSize2; jt++) {
@@ -171,6 +136,7 @@ void copyFromTiledArray(int SIZE1, int SIZE2, int T1, int T2, int pad1, int pad2
 	int paddedTileDimSize1 = SIZE1 / T1;
 	int paddedTileDimSize2 = SIZE2 / T2;
 
+#pragma omp parallel for private(jt, i, j)
 	for (it = 0; it < paddedTileDimSize1; it++) {
 		int itT1 = it*T1;
 		for (jt = 0; jt < paddedTileDimSize2; jt++) {
