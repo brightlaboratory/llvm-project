@@ -1,0 +1,11 @@
+#!/bin/bash
+#
+#SBATCH --job-name=polydl-rl
+#SBATCH --output=run_experiments.txt
+#
+#SBATCH --time=24:00:00
+#SBATCH --nodes=1
+#SBATCH --partition=clx
+cd $PWD  #FIXME -- path
+
+sh run_variants_data_packing_matmul.sh 128 2048 4096 jt2 
