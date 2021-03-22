@@ -193,7 +193,7 @@ double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1]
 	unsigned long long l_start, l_end;
 	double l_total = 0.0;
 	int i;
-	printf("In matmul3.c\n");
+	printf("In matmul_explicit_data_packing.c\n");
 	printf("M1_Tile = %d, N1_Tile = %d, K1_Tile = %d\n", M1_Tile, N1_Tile, K1_Tile);
 	printf("M2_Tile = %d, N2_Tile = %d, K2_Tile = %d\n", M2_Tile, N2_Tile, K2_Tile);
 
@@ -212,7 +212,17 @@ double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1]
 #ifdef PARALLEL_jt1
 	printf("jt1 loop is parallel\n");
 #endif
-	printf("N_pad = %d\n", N_pad);
+
+#pragma omp parallel
+{
+        int num_threads = omp_get_num_threads();
+        int tid = omp_get_thread_num();
+	if (tid == 0) {
+        	printf("num_threads = %d\n", num_threads);
+        }
+}
+
+	printf("M_pad = %d,  N_pad = %d, K_pad = %d\n", M_pad, N_pad, K_pad);
 	float(*A_Tiled)[(K1+K_pad) / K1_Tile][M1_Tile][K1_Tile] =
 		(float*)libxsmm_aligned_malloc((M1+M_pad)*(K1+K_pad) * sizeof(float), 2097152);
 	float(*B_Tiled)[(N1+N_pad) / N1_Tile][K1_Tile][N1_Tile] =
@@ -262,16 +272,16 @@ void matmul_high_performance_core(
 		int chunk = ceil((it2_end - it2_start) / (num_threads * 1.0));
 		it2_start = it2_start + tid * chunk;
 		it2_end = min(it2_start + chunk, M1+M_pad);
-		//printf("tid = %d, num_threads = %d, it2_start = %d, it2_end = %d\n",
-		// tid, num_threads, it2_start, it2_end);
+	//	printf("tid = %d, num_threads = %d, it2_start = %d, it2_end = %d\n",
+	//	 tid, num_threads, it2_start, it2_end);
 #endif
 
 #ifdef PARALLEL_jt2
 		int chunk = ceil((jt2_end - jt2_start) / (num_threads * 1.0));
 		jt2_start = jt2_start + tid * chunk;
 		jt2_end = min(jt2_start + chunk, N1+N_pad);
-		// printf("tid = %d, num_threads = %d, jt2_start = %d, jt2_end = %d\n",
-		// tid, num_threads, jt2_start, jt2_end);
+	//	printf("tid = %d, num_threads = %d, jt2_start = %d, jt2_end = %d\n",
+	//	 tid, num_threads, jt2_start, jt2_end);
 #endif
 
 		for (it2 = it2_start; it2 < it2_end; it2 += M2_Tile) {

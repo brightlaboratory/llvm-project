@@ -255,7 +255,7 @@ int main() {
 	printf("A: %f, %f\n", A[0][0], A[M1 - 1][K1 - 1]);
 	printf("B: %f, %f\n", B[0][0], B[K1 - 1][N1 - 1]);
 	printf("C_ref: %f, %f, %f\n", C_ref[0][0], C_ref[M1 / 2][N1 / 2], C_ref[M1 - 1][N1 - 1]);
-	printf("C: %f, %f, %f\n", C[0][0], C[M1 / 2][N1 / 2], C[M1 - 1][N1 - 1]);
+	printf("C    : %f, %f, %f\n", C[0][0], C[M1 / 2][N1 / 2], C[M1 - 1][N1 - 1]);
 
 	init_array(A, B, C, C_ref);
 	l_total = matmul_high_performance(A, B, C, NUM_ITERS);
