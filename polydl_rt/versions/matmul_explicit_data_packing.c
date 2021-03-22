@@ -205,23 +205,6 @@ double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1]
 	printf("jt2 loop is parallel\n");
 #endif
 
-#ifdef PARALLEL_it1
-	printf("it1 loop is parallel\n");
-#endif
-
-#ifdef PARALLEL_jt1
-	printf("jt1 loop is parallel\n");
-#endif
-
-#pragma omp parallel
-{
-        int num_threads = omp_get_num_threads();
-        int tid = omp_get_thread_num();
-	if (tid == 0) {
-        	printf("num_threads = %d\n", num_threads);
-        }
-}
-
 	printf("M_pad = %d,  N_pad = %d, K_pad = %d\n", M_pad, N_pad, K_pad);
 	float(*A_Tiled)[(K1+K_pad) / K1_Tile][M1_Tile][K1_Tile] =
 		(float*)libxsmm_aligned_malloc((M1+M_pad)*(K1+K_pad) * sizeof(float), 2097152);
@@ -252,85 +235,62 @@ double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1]
 	return l_total;
 }
 
-void matmul_high_performance_core(
-		float A[(M1+M_pad) / M1_Tile][(K1+K_pad) / K1_Tile][M1_Tile][K1_Tile],
-		float B[(K1+K_pad) / K1_Tile][(N1+N_pad) / N1_Tile][K1_Tile][N1_Tile],
-		float C[(M1+M_pad) / M1_Tile][(N1+N_pad) / N1_Tile][M1_Tile][N1_Tile])
+	void matmul_high_performance_core(
+			float A[(M1+M_pad) / M1_Tile][(K1+K_pad) / K1_Tile][M1_Tile][K1_Tile],
+			float B[(K1+K_pad) / K1_Tile][(N1+N_pad) / N1_Tile][K1_Tile][N1_Tile],
+			float C[(M1+M_pad) / M1_Tile][(N1+N_pad) / N1_Tile][M1_Tile][N1_Tile])
 {
+	int it2, jt2, kt2, it1, jt1, kt1;
+	int it2_start = 0;
+	int it2_end = M1+M_pad;
+	int jt2_start = 0;
+	int jt2_end = N1+N_pad;
+	int k2_start = 0;
+	int kt2_end = K1+K_pad;
 
-#pragma omp parallel 
-	{
-		int it2, jt2, kt2, it1, jt1, kt1, i, j, k, i_max, j_max, k_max;
-		int tid = omp_get_thread_num();
-		int num_threads = omp_get_num_threads();
-		int it2_start = 0;
-		int it2_end = M1+M_pad;
-		int jt2_start = 0;
-		int jt2_end = N1+N_pad;
-
+	// First level of tiling
 #ifdef PARALLEL_it2
-		int chunk = ceil((it2_end - it2_start) / (num_threads * 1.0));
-		it2_start = it2_start + tid * chunk;
-		it2_end = min(it2_start + chunk, M1+M_pad);
-	//	printf("tid = %d, num_threads = %d, it2_start = %d, it2_end = %d\n",
-	//	 tid, num_threads, it2_start, it2_end);
+#pragma omp parallel for private(jt2, kt2, it1, jt1, kt1)
+	for (it2 = it2_start; it2 < it2_end; it2 += M2_Tile) {
 #endif
+		int it1_start = it2;
+		int it1_end = min(M1+M_pad, it2 + M2_Tile);
 
 #ifdef PARALLEL_jt2
-		int chunk = ceil((jt2_end - jt2_start) / (num_threads * 1.0));
-		jt2_start = jt2_start + tid * chunk;
-		jt2_end = min(jt2_start + chunk, N1+N_pad);
-	//	printf("tid = %d, num_threads = %d, jt2_start = %d, jt2_end = %d\n",
-	//	 tid, num_threads, jt2_start, jt2_end);
+#pragma omp parallel for private(kt2, it1, jt1, kt1)
 #endif
+		for (jt2 = jt2_start; jt2 < jt2_end; jt2 += N2_Tile) {
+			printf("thread_id = %d\n", omp_get_thread_num());
+			int jt1_start = jt2;
+			int jt1_end = min(N1+N_pad, jt2 + N2_Tile);
 
-		for (it2 = it2_start; it2 < it2_end; it2 += M2_Tile) {
-			for (jt2 = jt2_start; jt2 < jt2_end; jt2 += N2_Tile) {
-
-				int it1_start = it2;
-				int it1_end = min(M1+M_pad, it2 + M2_Tile);
-				int jt1_start = jt2;
-				int jt1_end = min(N1+N_pad, jt2 + N2_Tile);
-
-#ifdef PARALLEL_it1
-				int chunk = ceil((it1_end - it1_start) / (num_threads * 1.0));
-				it1_start = it1_start + tid * chunk;
-				it1_end = min(it1_start + chunk, min(M1+M_pad, it2 + M2_Tile));
-#endif
-
-#ifdef PARALLEL_jt1
-				int chunk = ceil((jt1_end - jt1_start) / (num_threads * 1.0));
-				jt1_start = jt1_start + tid * chunk;
-				jt1_end = min(jt1_start + chunk, min(N1+N_pad, jt2 + N2_Tile));
-#endif
-
-				for (kt2 = 0; kt2 < K1+K_pad; kt2 += K2_Tile) {
-
-					// Second level of tiling
-					for (it1 = it1_start; it1 < it1_end; it1 += M1_Tile) {
-						for (jt1 = jt1_start; jt1 < jt1_end; jt1 += N1_Tile) {
-							for (kt1 = kt2; kt1 < min(K1+K_pad, kt2 + K2_Tile); kt1 += K1_Tile) {
+			for (kt2 = k2_start; kt2 < kt2_end; kt2 += K2_Tile) {
+				int kt1_start = kt2;
+				int kt1_end = min(K1+K_pad, kt2 + K2_Tile);
+				// Second level of tiling
+				for (it1 = it1_start; it1 < it1_end; it1 += M1_Tile) {
+					for (jt1 = jt1_start; jt1 < jt1_end; jt1 += N1_Tile) {
+						for (kt1 = kt1_start; kt1 < kt1_end; kt1 += K1_Tile) {
 #ifdef jit_variant
-								polydl_lib_matmul_f32_fma(M1_Tile,N1_Tile,K1_Tile,K1_Tile,N1_Tile,N1_Tile, 
-										&A[it1 / M1_Tile][kt1 / K1_Tile][0][0], 
-										&B[kt1 / K1_Tile][jt1 / N1_Tile][0][0], 
-										&C[it1 / M1_Tile][jt1 / N1_Tile][0][0]);
+							polydl_lib_matmul_f32_fma(M1_Tile,N1_Tile,K1_Tile,K1_Tile,N1_Tile,N1_Tile, 
+									&A[it1 / M1_Tile][kt1 / K1_Tile][0][0], 
+									&B[kt1 / K1_Tile][jt1 / N1_Tile][0][0], 
+									&C[it1 / M1_Tile][jt1 / N1_Tile][0][0]);
 #endif
 
 #ifndef jit_variant
-								fwd_gemm(&B[kt1 / K1_Tile][jt1 / N1_Tile][0][0],
-										&A[it1 / M1_Tile][kt1 / K1_Tile][0][0],
-										&C[it1 / M1_Tile][jt1 / N1_Tile][0][0]);
+							fwd_gemm(&B[kt1 / K1_Tile][jt1 / N1_Tile][0][0],
+									&A[it1 / M1_Tile][kt1 / K1_Tile][0][0],
+									&C[it1 / M1_Tile][jt1 / N1_Tile][0][0]);
 #endif
 
-							}
 						}
 					}
 				}
 			}
 		}
-
 	}
+
 
 }
 
