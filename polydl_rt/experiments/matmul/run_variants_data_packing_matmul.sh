@@ -16,19 +16,19 @@ Step_K=32
 
 echo M: $M N: $N K: $K
 
-for (( Outer_Mj =128; Outer_Mj<=$M; Outer_Mj=Outer_Mj*4))
+for (( Outer_Mj =32; Outer_Mj<=128; Outer_Mj=Outer_Mj*2))
 do  
-for (( Outer_Nj =128; Outer_Nj<=$N; Outer_Nj=Outer_Nj*4))
+for (( Outer_Nj =32; Outer_Nj<=128; Outer_Nj=Outer_Nj*2))
 do  
-for (( Outer_Kj =128; Outer_Kj<=$K; Outer_Kj=Outer_Kj*4))
+for (( Outer_Kj =32; Outer_Kj<=128; Outer_Kj=Outer_Kj*2))
 do  
 
 
-for (( Outer_Mi =32; Outer_Mi<=128; Outer_Mi=Outer_Mi*2))
+for (( Outer_Mi =32; Outer_Mi<=${Outer_Mj}; Outer_Mi=Outer_Mi*2))
 do 
-for (( Outer_Ni =32; Outer_Ni<=128; Outer_Ni=Outer_Ni*2))
+for (( Outer_Ni =32; Outer_Ni<=${Outer_Nj}; Outer_Ni=Outer_Ni*2))
 do  
-for (( Outer_Ki =32; Outer_Ki<=128; Outer_Ki=Outer_Ki*2))
+for (( Outer_Ki =32; Outer_Ki<=${Outer_Kj}; Outer_Ki=Outer_Ki*2))
 do  
  
 
