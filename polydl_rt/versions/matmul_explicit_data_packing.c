@@ -251,8 +251,8 @@ double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1]
 	// First level of tiling
 #ifdef PARALLEL_it2
 #pragma omp parallel for private(jt2, kt2, it1, jt1, kt1)
-	for (it2 = it2_start; it2 < it2_end; it2 += M2_Tile) {
 #endif
+	for (it2 = it2_start; it2 < it2_end; it2 += M2_Tile) {
 		int it1_start = it2;
 		int it1_end = min(M1+M_pad, it2 + M2_Tile);
 
