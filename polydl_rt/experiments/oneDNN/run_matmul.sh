@@ -24,6 +24,6 @@ export OMP_NUM_THREADS=${NUM_THREADS}
 config="m${m}n${n}k${k}"
 
 #echo -n $config, >> ${OUT}
-GFLOPS=`$BENCHDNN --matmul --mode=p --cfg=f32 $config"_nconfigg" | grep "_nconfigg" | cut -d"," -f9`
+GFLOPS=`$BENCHDNN --matmul --mode=p --cfg=f32 $config"_nconfigg" | grep "_nconfigg" | cut -d"," -f11`
 echo -n ${config_num},$GFLOPS >> ${OUT}
 echo "" >> ${OUT}

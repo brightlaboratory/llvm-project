@@ -9,8 +9,8 @@
 
 cd $PWD
 NUM_THREADS=28
-#sh ./run_matmul.sh 128 2048 4096 ${NUM_THREADS}
-#sh ./run_matmul.sh 320 3072 4096 ${NUM_THREADS}
+sh ./run_matmul.sh 128 2048 4096 ${NUM_THREADS}
+sh ./run_matmul.sh 320 3072 4096 ${NUM_THREADS}
 sh ./run_matmul.sh 1632 36548 1024 ${NUM_THREADS}
 sh ./run_matmul.sh 2048 4096 32 ${NUM_THREADS}
 
