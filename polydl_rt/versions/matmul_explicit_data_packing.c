@@ -226,7 +226,6 @@ double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1]
 #pragma omp parallel for private(kt2, it1, jt1, kt1)
 #endif
 		for (jt2 = jt2_start; jt2 < jt2_end; jt2 += N2_Tile) {
-			printf("thread_id = %d\n", omp_get_thread_num());
 			int jt1_start = jt2;
 			int jt1_end = min(N1+N_pad, jt2 + N2_Tile);
 
