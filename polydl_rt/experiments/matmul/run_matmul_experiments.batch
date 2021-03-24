@@ -8,4 +8,8 @@
 #SBATCH --partition=clx
 cd $PWD  #FIXME -- path
 
-sh run_variants_data_packing_matmul.sh 128 2048 4096 jt2 
+#sh run_variants_data_packing_matmul.sh 128 2048 4096 jt2 
+#sh run_variants_data_packing_matmul.sh 320 3072 4096 jt2
+sh run_variants_data_packing_matmul.sh 1632 36548 1024 jt2
+#sh run_variants_data_packing_matmul.sh 2048 4096 32 jt2
+

@@ -41,6 +41,10 @@
 #define N_pad ((N1%16)? (16-(N1%16)) : (0))
 #define K_pad ((K1%2)? (2-(K1%2)) : (0))
 
+#define M_pad ((M1%M1_Tile)? (M1_Tile-(M1%M1_Tile)) : (0))
+#define N_pad ((N1%N1_Tile)? (N1_Tile-(N1%N1_Tile)) : (0))
+#define K_pad ((K1%K1_Tile)? (K1_Tile-(K1%K1_Tile)) : (0))
+
 // #define M_pad 0
 // #define N_pad 0
 // #define K_pad 0
@@ -179,6 +183,7 @@ double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1]
 	float(*C_Tiled)[(N1+N_pad) / N1_Tile][M1_Tile][N1_Tile] =
 		(float*)libxsmm_aligned_malloc((M1+M_pad)*(N1+N_pad) * sizeof(float), 2097152);
 
+	printf("iters = %d\n", iters);
 	l_start = libxsmm_timer_tick();
 
 	for (i = 0; i < iters; i++) {
@@ -236,8 +241,11 @@ double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1]
 				for (it1 = it1_start; it1 < it1_end; it1 += M1_Tile) {
 					for (jt1 = jt1_start; jt1 < jt1_end; jt1 += N1_Tile) {
 						for (kt1 = kt1_start; kt1 < kt1_end; kt1 += K1_Tile) {
+int it1_range = min(M1_Tile, it1_end - it1); 
+int jt1_range = min(N1_Tile, jt1_end - jt1); 
+int kt1_range = min(K1_Tile, kt1_end - kt1); 
 #ifdef jit_variant
-							polydl_lib_matmul_f32_fma(M1_Tile,N1_Tile,K1_Tile,K1_Tile,N1_Tile,N1_Tile, 
+							polydl_lib_matmul_f32_fma(it1_range,jt1_range,kt1_range,K1_Tile,N1_Tile,N1_Tile, 
 									&A[it1 / M1_Tile][kt1 / K1_Tile][0][0], 
 									&B[kt1 / K1_Tile][jt1 / N1_Tile][0][0], 
 									&C[it1 / M1_Tile][jt1 / N1_Tile][0][0]);
