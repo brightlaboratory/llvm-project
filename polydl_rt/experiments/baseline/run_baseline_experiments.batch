@@ -1,0 +1,26 @@
+#!/bin/bash
+#
+#SBATCH --job-name=baseline
+#SBATCH --output=baseline.txt
+#
+#SBATCH --time=24:00:00
+#SBATCH --nodes=1
+#SBATCH --partition=clx
+
+cd $PWD
+NUM_THREADS=28
+ITERS=10
+sh ./run_matmul.sh ${ITERS} 128 2048 4096 ${NUM_THREADS}
+sh ./run_matmul.sh ${ITERS} 320 3072 4096 ${NUM_THREADS}
+sh ./run_matmul.sh ${ITERS} 1632 36548 1024 ${NUM_THREADS}
+sh ./run_matmul.sh ${ITERS} 2048 4096 32 ${NUM_THREADS}
+
+sh ./run_matmul.sh ${ITERS} 1024 16 500000 ${NUM_THREADS}
+sh ./run_matmul.sh ${ITERS} 35 8457 2560 ${NUM_THREADS}
+
+sh ./run_matmul.sh ${ITERS} 31999 1024 84 ${NUM_THREADS}
+sh ./run_matmul.sh ${ITERS} 84 1024 4096 ${NUM_THREADS}
+
+sh ./run_matmul.sh ${ITERS} 2048 1 128 ${NUM_THREADS}
+sh ./run_matmul.sh ${ITERS} 256 256 2048 ${NUM_THREADS}
+
