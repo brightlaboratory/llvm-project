@@ -1,5 +1,6 @@
 CC=icc
-CFLAGS=-O3 -mtune=skylake-avx512 -I . -I../../../libxsmm/include -fopenmp -DUSE_LIBXSMM 
+#CFLAGS=-O3 -mtune=skylake-avx512 -I . -I../../../libxsmm/include -fopenmp 
+CFLAGS=-O3 -mtune=skylake-avx512 -I . -I../../../libxsmm/include -fopenmp 
 LDFLAGS=-L../../../libxsmm/lib -lxsmm -lxsmmext -ldl -lm 
 MACROFLAGS=
 

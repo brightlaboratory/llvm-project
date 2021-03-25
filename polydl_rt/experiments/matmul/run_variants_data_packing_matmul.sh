@@ -10,19 +10,21 @@ PARALLEL_LOOP=$4
 ITERS=10
 THREADS=28
 
-Step_M=32
+Step_M=16
 Step_N=32
-Step_K=32
+Step_K=16
 
 echo M: $M N: $N K: $K
 
-for (( Outer_Mj =32; Outer_Mj<=256; Outer_Mj=Outer_Mj*2))
+for (( Outer_Mj =32; Outer_Mj<=1024; Outer_Mj=Outer_Mj*4))
 do  
-for (( Outer_Nj =32; Outer_Nj<=256; Outer_Nj=Outer_Nj*2))
+for (( Outer_Nj =32; Outer_Nj<=1024; Outer_Nj=Outer_Nj*4))
 do  
-for (( Outer_Kj =32; Outer_Kj<=256; Outer_Kj=Outer_Kj*2))
+for (( Outer_Kj =32; Outer_Kj<=1024; Outer_Kj=Outer_Kj*4))
 do  
 
+   if [ ${Outer_Mi} -le ${M} -a ${Outer_Ni} -le ${N} -a ${Outer_Ki} -le ${K} ]
+   then
 
 for (( Outer_Mi =32; Outer_Mi<=64; Outer_Mi=Outer_Mi*2))
 do 
@@ -35,7 +37,7 @@ do
    then
 
 
-for (( Step_M_i=1; Step_M_i<=$Step_M; Step_M_i=Step_M_i*2))
+for (( Step_M_i=1; Step_M_i<=$Step_M; Step_M_i=Step_M_i*4))
 do  
    if [ `expr $Step_M % ${Step_M_i}` -eq 0 ]
    then
@@ -65,6 +67,9 @@ fi
 done
 done
 done
+
+fi
+
 done
 done
 done
