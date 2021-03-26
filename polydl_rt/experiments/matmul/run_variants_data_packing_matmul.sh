@@ -10,9 +10,9 @@ PARALLEL_LOOP=$4
 ITERS=10
 THREADS=28
 
-Step_M=16
+Step_M=8
 Step_N=32
-Step_K=16
+Step_K=8
 
 echo M: $M N: $N K: $K
 
@@ -23,8 +23,9 @@ do
 for (( Outer_Kj =32; Outer_Kj<=1024; Outer_Kj=Outer_Kj*4))
 do  
 
-   if [ ${Outer_Mi} -le ${M} -a ${Outer_Ni} -le ${N} -a ${Outer_Ki} -le ${K} ]
+   if [ ${Outer_Mj} -le ${M} -a ${Outer_Nj} -le ${N} -a ${Outer_Kj} -le ${K} ]
    then
+
 
 for (( Outer_Mi =32; Outer_Mi<=64; Outer_Mi=Outer_Mi*2))
 do 
@@ -52,9 +53,12 @@ do
          if [ `expr $Step_K % ${Step_K_k}` -eq 0 ]
          then
 
+if [ ${Step_M_i} -le ${Outer_Mi} -a ${Step_N_j} -le ${Outer_Ni} -a ${Step_K_k} -le ${Outer_Ki} ] 
+then
 
 sh run_matmul.sh ${ITERS} $M $N $K ${Outer_Mj} ${Outer_Nj} ${Outer_Kj} ${Outer_Mi} ${Outer_Ni} ${Outer_Ki} ${Step_M_i} ${Step_N_j} ${Step_K_k} ${PARALLEL_LOOP} ${THREADS} 
 
+fi
           	 fi
         	done
           fi
