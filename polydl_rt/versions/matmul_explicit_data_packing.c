@@ -184,9 +184,17 @@ double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1]
 		(float*)libxsmm_aligned_malloc((M1+M_pad)*(N1+N_pad) * sizeof(float), 2097152);
 
 	printf("iters = %d\n", iters);
+
+/*
+        copyToTiledArray(M1+M_pad, K1+K_pad, M1_Tile, K1_Tile, M_pad, K_pad, A, A_Tiled);
+        copyToTiledArray(K1+K_pad, N1+N_pad, K1_Tile, N1_Tile, K_pad, N_pad, B, B_Tiled);
+        copyToTiledArray(M1+M_pad, N1+N_pad, M1_Tile, N1_Tile, M_pad, N_pad, C, C_Tiled);
+*/
+
 	l_start = libxsmm_timer_tick();
 
 	for (i = 0; i < iters; i++) {
+
 		copyToTiledArray(M1+M_pad, K1+K_pad, M1_Tile, K1_Tile, M_pad, K_pad, A, A_Tiled);
 		copyToTiledArray(K1+K_pad, N1+N_pad, K1_Tile, N1_Tile, K_pad, N_pad, B, B_Tiled);
 		copyToTiledArray(M1+M_pad, N1+N_pad, M1_Tile, N1_Tile, M_pad, N_pad, C, C_Tiled);
@@ -198,6 +206,8 @@ double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1]
 
 	l_end = libxsmm_timer_tick();
 	l_total = libxsmm_timer_duration(l_start, l_end);
+
+//        copyFromTiledArray(M1+M_pad, N1+N_pad, M1_Tile, N1_Tile, M_pad, N_pad, C, C_Tiled);
 
 	libxsmm_free(A_Tiled);
 	libxsmm_free(B_Tiled);
