@@ -159,6 +159,85 @@ void copyFromTiledArray(int SIZE1, int SIZE2, int T1, int T2, int pad1, int pad2
 
 }
 
+// #define NO_DATA_PACKING
+#ifdef NO_DATA_PACKING
+double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1], int iters)
+{
+	unsigned long long l_start, l_end;
+	double l_total = 0.0;
+
+	int i;
+	printf("In matmul3 matmul_high_performance_NO_DATA_PACKING\n");
+	printf("iters = %d\n", iters);
+
+	l_start = libxsmm_timer_tick();
+
+	for (i = 0; i < iters; i++) {
+		matmul_high_performance_core_no_data_packing(A, B, C);
+	}
+
+	l_end = libxsmm_timer_tick();
+	l_total = libxsmm_timer_duration(l_start, l_end);
+
+	return l_total;
+}
+#endif
+
+void matmul_high_performance_core_no_data_packing(float A[M1][K1], float B[K1][N1], float C[M1][N1]) {
+	int it2, jt2, kt2, it1, jt1, kt1, i, j, k;
+	// First level of tiling
+#ifdef PARALLEL_it2
+#pragma omp parallel for private(jt2, kt2, it1, jt1, kt1, i, j, k)
+#endif
+	for (it2 = 0; it2 < M1; it2 += M2_Tile) {
+#ifdef PARALLEL_jt2
+#pragma omp parallel for private(kt2, it1, jt1, kt1, i, j, k)
+#endif
+		for (jt2 = 0; jt2 < N1; jt2 += N2_Tile) {
+			for (kt2 = 0; kt2 < K1; kt2 += K2_Tile) {
+
+				// Second level of tiling
+				int it1_max = it2 + M2_Tile;
+				for (it1 = it2; it1 < it1_max; it1 += M1_Tile) {
+					int jt1_max = jt2 + N2_Tile;
+					for (jt1 = jt2; jt1 < jt1_max; jt1 += N1_Tile) {
+						int kt1_max = kt2 + K2_Tile;
+						for (kt1 = kt2; kt1 < kt1_max; kt1 += K1_Tile) {
+
+							int i_max = min(M1, it1 + M1_Tile);
+							int j_max = min(N1, jt1 + N1_Tile);
+							int k_max = min(K1, kt1 + K1_Tile);
+
+							int it1_range = i_max - it1;
+							int jt1_range = j_max - jt1;
+							int kt1_range = k_max - kt1;
+
+							//printf("Calling into polydl_lib_matmul_f32_fma\n");
+							polydl_lib_matmul_f32_fma(it1_range,jt1_range,kt1_range,K1,N1,N1,
+									&A[it1][kt1],
+									&B[kt1][jt1],
+									&C[it1][jt1]);
+
+							// Inner most intra-tile loops
+							/*
+							   for (i = it1; i < i_max; i++) {
+							   for (j = jt1; j < j_max; j++) {
+							   for (k = kt1; k < k_max; k++) {
+							   C[i][j] = C[i][j] + A[i][k] * B[k][j];
+							   }
+							   }
+							   }
+							   */
+						}
+					}
+				}
+			}
+		}
+	}
+
+}
+
+#ifndef NO_DATA_PACKING
 double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1], int iters) {
 	unsigned long long l_start, l_end;
 	double l_total = 0.0;
@@ -185,11 +264,11 @@ double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1]
 
 	printf("iters = %d\n", iters);
 
-/*
-        copyToTiledArray(M1+M_pad, K1+K_pad, M1_Tile, K1_Tile, M_pad, K_pad, A, A_Tiled);
-        copyToTiledArray(K1+K_pad, N1+N_pad, K1_Tile, N1_Tile, K_pad, N_pad, B, B_Tiled);
-        copyToTiledArray(M1+M_pad, N1+N_pad, M1_Tile, N1_Tile, M_pad, N_pad, C, C_Tiled);
-*/
+	/*
+	   copyToTiledArray(M1+M_pad, K1+K_pad, M1_Tile, K1_Tile, M_pad, K_pad, A, A_Tiled);
+	   copyToTiledArray(K1+K_pad, N1+N_pad, K1_Tile, N1_Tile, K_pad, N_pad, B, B_Tiled);
+	   copyToTiledArray(M1+M_pad, N1+N_pad, M1_Tile, N1_Tile, M_pad, N_pad, C, C_Tiled);
+	   */
 
 	l_start = libxsmm_timer_tick();
 
@@ -207,7 +286,7 @@ double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1]
 	l_end = libxsmm_timer_tick();
 	l_total = libxsmm_timer_duration(l_start, l_end);
 
-//        copyFromTiledArray(M1+M_pad, N1+N_pad, M1_Tile, N1_Tile, M_pad, N_pad, C, C_Tiled);
+	//        copyFromTiledArray(M1+M_pad, N1+N_pad, M1_Tile, N1_Tile, M_pad, N_pad, C, C_Tiled);
 
 	libxsmm_free(A_Tiled);
 	libxsmm_free(B_Tiled);
@@ -215,6 +294,7 @@ double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1]
 
 	return l_total;
 }
+#endif
 
 	void matmul_high_performance_core(
 			float A[(M1+M_pad) / M1_Tile][(K1+K_pad) / K1_Tile][M1_Tile][K1_Tile],
@@ -251,9 +331,9 @@ double matmul_high_performance(float A[M1][K1], float B[K1][N1], float C[M1][N1]
 				for (it1 = it1_start; it1 < it1_end; it1 += M1_Tile) {
 					for (jt1 = jt1_start; jt1 < jt1_end; jt1 += N1_Tile) {
 						for (kt1 = kt1_start; kt1 < kt1_end; kt1 += K1_Tile) {
-int it1_range = min(M1_Tile, it1_end - it1); 
-int jt1_range = min(N1_Tile, jt1_end - jt1); 
-int kt1_range = min(K1_Tile, kt1_end - kt1); 
+							int it1_range = min(M1_Tile, it1_end - it1); 
+							int jt1_range = min(N1_Tile, jt1_end - jt1); 
+							int kt1_range = min(K1_Tile, kt1_end - kt1); 
 #ifdef jit_variant
 							polydl_lib_matmul_f32_fma(it1_range,jt1_range,kt1_range,K1_Tile,N1_Tile,N1_Tile, 
 									&A[it1 / M1_Tile][kt1 / K1_Tile][0][0], 
