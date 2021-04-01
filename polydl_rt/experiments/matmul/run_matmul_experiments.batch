@@ -10,6 +10,20 @@ cd $PWD  #FIXME -- path
 
 #sh run_variants_data_packing_matmul.sh 128 2048 4096 jt2 
 #sh run_variants_data_packing_matmul.sh 320 3072 4096 jt2
-sh run_variants_data_packing_matmul.sh 1632 36548 1024 jt2
+#sh run_variants_data_packing_matmul.sh 1632 36548 1024 jt2
 #sh run_variants_data_packing_matmul.sh 2048 4096 32 jt2
 
+PARALLEL_LOOP=seq
+sh ./run_variants_data_packing_matmul.sh 128 2048 4096 ${PARALLEL_LOOP}
+#sh ./run_variants_data_packing_matmul.sh 320 3072 4096 ${PARALLEL_LOOP}
+#sh ./run_variants_data_packing_matmul.sh 1632 36548 1024 ${PARALLEL_LOOP}
+#sh ./run_variants_data_packing_matmul.sh 2048 4096 32 ${PARALLEL_LOOP}
+
+#sh ./run_variants_data_packing_matmul.sh 1024 16 500000 ${PARALLEL_LOOP}
+#sh ./run_variants_data_packing_matmul.sh 35 8457 2560 ${PARALLEL_LOOP}
+
+#sh ./run_variants_data_packing_matmul.sh 31999 1024 84 ${PARALLEL_LOOP}
+#sh ./run_variants_data_packing_matmul.sh 84 1024 4096 ${PARALLEL_LOOP}
+
+#sh ./run_variants_data_packing_matmul.sh 2048 1 128 ${PARALLEL_LOOP}
+#sh ./run_variants_data_packing_matmul.sh 256 256 2048 ${PARALLEL_LOOP}

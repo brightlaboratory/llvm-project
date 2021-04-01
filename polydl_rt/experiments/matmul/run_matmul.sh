@@ -65,8 +65,9 @@ python ../../microkernel_codeGenerator.py ${Step_M} ${Step_N} ${Step_K} 0 0 0
 cp output.c ../../
 cp output.c ${TEMP}
 
+NO_DATA_PACKING_FLAG=-DNO_DATA_PACKING
 EXPERIMENTS_DIR=$PWD
-(cd ../.. && make clean && make version_file=versions/matmul_explicit_data_packing.c MACROFLAGS="-Djit_variant -DM1=$M1 -DN1=$N1 -DK1=$K1 -DNUM_ITERS=$iters -DM2_Tile=${M2_Tile} -DN2_Tile=${N2_Tile} -DK2_Tile=${K2_Tile} -DM1_Tile=${M1_Tile} -DN1_Tile=${N1_Tile} -DK1_Tile=${K1_Tile} -DPARALLEL_${PARALLEL_LOOP}")
+(cd ../.. && make clean && make version_file=versions/matmul_explicit_data_packing.c MACROFLAGS="-Djit_variant ${NO_DATA_PACKING_FLAG} -DM1=$M1 -DN1=$N1 -DK1=$K1 -DNUM_ITERS=$iters -DM2_Tile=${M2_Tile} -DN2_Tile=${N2_Tile} -DK2_Tile=${K2_Tile} -DM1_Tile=${M1_Tile} -DN1_Tile=${N1_Tile} -DK1_Tile=${K1_Tile} -DPARALLEL_${PARALLEL_LOOP}")
 
 ../../matmul &> run_output
 GFLOPS=`cat run_output |  grep Real_GFLOPS |  cut -d= -f2`
@@ -88,7 +89,11 @@ export LD_LIBRARY_PATH=/nfs_home/stavarag/work/software/barvinok/barvinok-0.41.2
 
 #../../../data_reuse_analyzer/polyscientist --input $EXPERIMENTS_DIR/$WORKFILE --parameters 'dummy : 50 ' --cachesizes "${CACHE_CONFIG}" --datatypesize $DATATYPESIZE --minout
 
-time ${POLYSCIENTIST} --input $EXPERIMENTS_DIR/$WORKFILE --parameters 'dummy : 50 ' --cachesizes "${CACHE_CONFIG}" --datatypesize $DATATYPESIZE --minout --parallel_loops ${PARALLEL_LOOP} --numprocs ${NUM_PROCS} --sharedcaches L3 
+#Parallel run
+#time ${POLYSCIENTIST} --input $EXPERIMENTS_DIR/$WORKFILE --parameters 'dummy : 50 ' --cachesizes "${CACHE_CONFIG}" --datatypesize $DATATYPESIZE --minout --parallel_loops ${PARALLEL_LOOP} --numprocs ${NUM_PROCS} --sharedcaches L3 
+
+#Sequential run
+time ${POLYSCIENTIST} --input $EXPERIMENTS_DIR/$WORKFILE --parameters 'dummy : 50 ' --cachesizes "${CACHE_CONFIG}" --datatypesize $DATATYPESIZE --minout
 
 output_file=${EXPERIMENTS_DIR}/${WORKFILE}_ws_stats.csv
 { echo -n "${config},${ERROR},${RELERROR},${GFLOPS}," ;  cat ${output_file} ; }  >> ${CONFIG_OUT}
