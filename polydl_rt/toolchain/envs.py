@@ -72,8 +72,8 @@ class PolyDL_Env():
         self.ub_Step_N = min(32,self.ub_ON)
         self.ub_Step_K = min(32,self.ub_OK)
         
-        self.GFLOPS = 40
-        self.MaxFLOPS = 40
+        self.GFLOPS = self.train_df[3].min()
+        self.MaxFLOPS = 0
         self.reward = 0
         self.done = False
         self.cur_step = [self.lb_Step_M,
@@ -112,6 +112,17 @@ class PolyDL_Env():
         stdout, stderr = process.communicate()
         return stdout
     
+    def _getResult(self,current_state):
+        cmd= self.make_cmd + "__"
+        self.problems[3]
+        for val in self.problems:
+            cmd+=str(val) + "_"
+        for val in current_state[:3]:
+            cmd+=str(val) + "_"
+
+        result = self.train_df[self.train_df[0].str.contains(cmd)]
+        return result
+    
     def _step(self,action):
         current_state = self._get_state()
         # new_state = [0]*19
@@ -119,12 +130,21 @@ class PolyDL_Env():
         idx = self.action_space[action]
         
         if idx == 6:
-            return current_state, self.reward, self.done
-        
-        if idx > 2:
-            current_state[idx%3]= max( self.lb_List[idx%3], int(current_state[idx%3]/2))
+            # return current_state, self.reward, self.done
+            result = self._getResult(current_state)
+        elif idx > 2:
+            while True:
+                current_state[idx%3]= max( self.lb_List[idx%3], int(current_state[idx%3]/2))
+                result = self._getResult(current_state)
+                if(len(result)>0) or current_state[idx%3] == self.lb_List[idx%3]:
+                    break
+
         else:
-            current_state[idx] = min ( self.ub_List[idx], current_state[idx] *2)
+            while True:
+                current_state[idx] = min ( self.ub_List[idx], current_state[idx] *2)
+                result = self._getResult(current_state)
+                if(len(result)>0) or current_state[idx] == self.ub_List[idx]:
+                    break
         
         # print(current_state)
         # # Run JIT Compiler
@@ -148,46 +168,29 @@ class PolyDL_Env():
         
         # Use Pre-calculated data set
 
-        # cmd="100_" + self.make_cmd + "__"
-        # self.problems[3]
-        # for val in self.problems:
-        #     cmd+=str(val) + "_"
-        # for val in current_state[:3]:
-        #     cmd+=str(val) + "_"
-        # cmd = cmd[:-1]
-        # cmd +="_jt2_28"
+        # result = self._getResult(current_state)
 
-        cmd= self.make_cmd + "__"
-        self.problems[3]
-        for val in self.problems:
-            cmd+=str(val) + "_"
-        for val in current_state[:3]:
-            cmd+=str(val) + "_"
-        
-        result = self.train_df[self.train_df[0].str.contains(cmd)]
+        self.cur_step = current_state
 
-        # print(cmd)
+        print("Curr State ", self.cur_step)
 
         # result = self.train_df[self.train_df[:,0]==cmd]
         # print(result)
         if len(result) == 0:
             # print("Am i reaching here")
-            return self._get_state(), self.reward, self.done
-        
+            return self.cur_step, -0.5, self.done        
 
         result = result.iloc[0]
 
-        self.reward = ((result[3] - self.GFLOPS)/ self.GFLOPS)*10
+        self.reward = ((result[3] - self.GFLOPS)/ self.GFLOPS) - 1
         # print("reward ", self.reward)
         self.GFLOPS = result[3]
-        # print("GFlops ",self.GFLOPS)
-
-        self.cur_step = current_state
+        # print("GFlops ",self.GFLOPS)    
 
         if self.GFLOPS > self.MaxFLOPS:
             self.MaxFLOPS = self.GFLOPS
         
-        return self.cur_step, self.reward, self.done
+        return self.cur_step, self.reward if idx!=6 else 0 , self.done
 
 
     

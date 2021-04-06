@@ -19,7 +19,7 @@ from keras.models import Sequential
 from keras.layers import Dense
 from keras import optimizers
 from keras import initializers
-
+from sklearn import preprocessing
 
 # In[13]:
 # Files Prerocess 
@@ -111,8 +111,14 @@ for diff_file in files:
 
     train_df = train_df.dropna(axis=1)
     
-    train_df[6]=0;
-    train_df[7]=0;
+    x = train_df.values #returns a numpy array
+    min_max_scaler = preprocessing.MinMaxScaler()
+    x_scaled = min_max_scaler.fit_transform(x)
+    train_df = pd.DataFrame(x_scaled)
+
+
+    # train_df[6]=0;
+    # train_df[7]=0;
     # print(train_df)
     # exit("Stop")
 
@@ -142,8 +148,8 @@ for i in range(len(arr)):
 
 arr = pd.DataFrame(arr)
 arr = arr.drop([0,ver_2_GF],axis=1)
-arr["sum"] = arr.sum(axis=1)
-arr = arr.loc[:,[1,2,3,4,6,7,8,9]].div(arr["sum"], axis=0)
+# arr["sum"] = arr.sum(axis=1)
+# arr = arr.loc[:,[1,2,3,4,6,7,8,9]].div(arr["sum"], axis=0)
 
 arr.head()
 
@@ -192,7 +198,7 @@ model.add(Dense(2, activation='softmax'))
 # compile the keras model
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 # fit the keras model on the dataset
-model.fit(training_set[:,:-2],training_set[:,8:], epochs=200, batch_size=200)
+model.fit(training_set[:,:-2],training_set[:,8:], epochs=100, batch_size=200)
 # evaluate the keras model
 _, accuracy = model.evaluate(test_set[:,:-2],test_set[:,8:])
 print('Accuracy: %.2f' % (accuracy*100))
@@ -219,16 +225,21 @@ for diff_file in files:
 #     print(print_ver_GF[0,1])
     train_df = train_df.drop([0,1,2,3], axis=1)
     train_df = train_df.dropna(axis=1)
-    train_df[6]=0;
-    train_df[7]=0;
+
+    x = train_df.values #returns a numpy array
+    min_max_scaler = preprocessing.MinMaxScaler()
+    x_scaled = min_max_scaler.fit_transform(x)
+    train_df = pd.DataFrame(x_scaled)
+    # train_df[6]=0;
+    # train_df[7]=0;
     npdata = np.array(train_df)
     
     for i in range(len(npdata)):
         for j in range(len(npdata)):
             arr_predict.append(np.concatenate((npdata[i],npdata[j]), axis=0))
     arr_predict = pd.DataFrame(arr_predict)
-    arr_predict["sum"] = arr_predict.sum(axis=1)
-    arr_predict = arr_predict.loc[:,[0,1,2,3,4,5,6,7]].div(arr_predict["sum"], axis=0)
+    # arr_predict["sum"] = arr_predict.sum(axis=1)
+    # arr_predict = arr_predict.loc[:,[0,1,2,3,4,5,6,7]].div(arr_predict["sum"], axis=0)
     arr_predict = np.asarray(arr_predict)
     prediction = model.predict(arr_predict)
 
@@ -318,5 +329,4 @@ for diff_file in files:
         str_temp = str_temp + str(val) + ", "
     f.write("%s\n" % str_temp)
     f.close()
-
 

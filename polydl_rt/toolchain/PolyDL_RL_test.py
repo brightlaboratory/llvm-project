@@ -53,9 +53,6 @@ def extract_Top5p(file):
 
     return df
 
-# Setting Up environment.
-problem_size1=[[128,2048,4096],[35,8457,2560]]
-
 files = []
 fileNameList = []
 import os
@@ -119,7 +116,13 @@ for idx, file in enumerate(files):
         for step in range(max_steps_per_episode):
 
             #explore or exploit
-            action = np.argmax(model.predict(state)[0])            
+            exploration_rate_threshold = random.uniform(0,1)
+            if exploration_rate_threshold < 0:
+                action = random.sample(list(range(7)), 1)[0]
+                # action = np.argmax(model.predict(state)[0])
+            else:
+                action = np.argmax(model.predict(state)[0])
+            # action = np.argmax(model.predict(state)[0])            
 
             new_state, reward, done= env._step(action)
 
@@ -144,7 +147,7 @@ for idx, file in enumerate(files):
             f.write("Problem ")
             for val in problem_size[episode]:
                 f.write("%s_ " % val)
-            f.write("GFLops : %s "% env._currentGFlops())
+            f.write("GFLops : %s "% MaxGFlop)
             f.write("\n")
             f.close()
         

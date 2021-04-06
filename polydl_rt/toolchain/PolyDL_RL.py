@@ -96,7 +96,7 @@ for file in files:
     max_steps_per_episode = 21
 
     learning_rate = 0.1
-    discount_rate = 0.99
+    discount_rate = 0.95
 
     exploration_rate = 1
     max_exploration_rate = 1
@@ -185,14 +185,14 @@ for file in files:
                 model.fit(old_state, target_f, epochs=1, verbose=0)
             
 
-            if not(step%7):
-                weights = model.get_weights()
-                target_weights = target_model.get_weights()
-                for i in range(len(target_weights)):
-                    target_weights[i] = weights[i] * 0.9 + target_weights[i] * 0.1
-                target_model.set_weights(target_weights)
+        if not((episode+1)%5):
+            weights = model.get_weights()
+            target_weights = target_model.get_weights()
+            for i in range(len(target_weights)):
+                target_weights[i] = weights[i] * 0.1 + target_weights[i] * 0.9
+            target_model.set_weights(target_weights)
 
-            print_to_csv.append([state[0],env._currentGFlops()])
+            # print_to_csv.append([state[0],env._currentGFlops()])
 
         with open('your_file.csv', 'a+') as f:
             for val in print_to_csv:
