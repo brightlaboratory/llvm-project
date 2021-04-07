@@ -8,18 +8,26 @@
 #SBATCH --partition=clx
 
 cd $PWD
-NUM_THREADS=28
-sh ./run_matmul.sh 128 2048 4096 ${NUM_THREADS}
-sh ./run_matmul.sh 320 3072 4096 ${NUM_THREADS}
-sh ./run_matmul.sh 1632 36548 1024 ${NUM_THREADS}
-sh ./run_matmul.sh 2048 4096 32 ${NUM_THREADS}
+NUM_THREADS=1
+#sh ./run_matmul.sh 128 2048 4096 ${NUM_THREADS}
+#sh ./run_matmul.sh 320 3072 4096 ${NUM_THREADS}
+#sh ./run_matmul.sh 1632 36548 1024 ${NUM_THREADS}
+#sh ./run_matmul.sh 2048 4096 32 ${NUM_THREADS}
 
-sh ./run_matmul.sh 1024 16 500000 ${NUM_THREADS}
-sh ./run_matmul.sh 35 8457 2560 ${NUM_THREADS}
+#sh ./run_matmul.sh 1024 16 500000 ${NUM_THREADS}
+#sh ./run_matmul.sh 35 8457 2560 ${NUM_THREADS}
 
-sh ./run_matmul.sh 31999 1024 84 ${NUM_THREADS}
-sh ./run_matmul.sh 84 1024 4096 ${NUM_THREADS}
+#sh ./run_matmul.sh 31999 1024 84 ${NUM_THREADS}
+#sh ./run_matmul.sh 84 1024 4096 ${NUM_THREADS}
 
-sh ./run_matmul.sh 2048 1 128 ${NUM_THREADS}
-sh ./run_matmul.sh 256 256 2048 ${NUM_THREADS}
+#sh ./run_matmul.sh 2048 1 128 ${NUM_THREADS}
+#sh ./run_matmul.sh 256 256 2048 ${NUM_THREADS}
+sh ./run_matmul.sh 16 16 16 ${NUM_THREADS}
+sh ./run_matmul.sh 32 32 32 ${NUM_THREADS}
+sh ./run_matmul.sh 64 64 64 ${NUM_THREADS}
+sh ./run_matmul.sh 128 128 128 ${NUM_THREADS}
+
+sh ./run_matmul.sh 32 32 64 ${NUM_THREADS}
+sh ./run_matmul.sh 32 64 32 ${NUM_THREADS}
+sh ./run_matmul.sh 64 32 32 ${NUM_THREADS}
 
