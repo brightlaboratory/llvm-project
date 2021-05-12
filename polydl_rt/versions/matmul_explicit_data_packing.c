@@ -211,12 +211,25 @@ void matmul_high_performance_core_no_data_packing(float A[M1][K1], float B[K1][N
 							int it1_range = i_max - it1;
 							int jt1_range = j_max - jt1;
 							int kt1_range = k_max - kt1;
+							
+							// float B_packed[kt1_range][jt1_range];
+							
+							// for (k = kt1; k < k_max; k++) {
+							// 	for (j = jt1; j < j_max; j++) {
+							//    		B_packed[k-kt1][j-jt1] = B[k][j];
+							//    	}
+							// }
 
-							//printf("Calling into polydl_lib_matmul_f32_fma\n");
+							// printf("Calling into polydl_lib_matmul_f32_fma No data packing\n");
 							polydl_lib_matmul_f32_fma(it1_range,jt1_range,kt1_range,K1,N1,N1,
 									&A[it1][kt1],
 									&B[kt1][jt1],
 									&C[it1][jt1]);
+
+							// polydl_lib_matmul_f32_fma(it1_range,jt1_range,kt1_range,K1,jt1_range,N1,
+							// 		&A[it1][kt1],
+							// 		&B_packed[0][0],
+							// 		&C[it1][jt1]);
 
 							// Inner most intra-tile loops
 							/*
