@@ -38,7 +38,7 @@ def extract_Top5p(file):
     top5_df = top5_df.iloc[1:]
     top5_df = top5_df.sort_values(by=[4])
 
-    top_count = math.ceil(top5_df.shape[0] * 0.05)
+    top_count = math.ceil(top5_df.shape[0] * 0.1)
     top5_df = top5_df.iloc[:top_count]
 
     # Split to integers
@@ -117,7 +117,7 @@ for idx, file in enumerate(files):
 
             #explore or exploit
             exploration_rate_threshold = random.uniform(0,1)
-            if exploration_rate_threshold < 0:
+            if exploration_rate_threshold < 0.6:
                 action = random.sample(list(range(7)), 1)[0]
                 # action = np.argmax(model.predict(state)[0])
             else:

@@ -76,9 +76,9 @@ class PolyDL_Env():
         self.MaxFLOPS = 0
         self.reward = 0
         self.done = False
-        self.cur_step = [self.lb_Step_M,
+        self.cur_step = [4,#self.lb_Step_M,
                         self.lb_Step_N,
-                        self.lb_Step_K,
+                        4,#self.lb_Step_K,
                         self.lb_OM,
                         self.lb_ON,
                         self.lb_OK

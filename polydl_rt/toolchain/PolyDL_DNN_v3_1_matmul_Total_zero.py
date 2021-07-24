@@ -110,7 +110,8 @@ for diff_file in files:
     train_df = train_df.sort_values(by=[3],ascending=False)
 
     train_df = train_df.dropna(axis=1)
-    
+    # print(train_df)
+
     x = train_df.values #returns a numpy array
     min_max_scaler = preprocessing.MinMaxScaler()
     x_scaled = min_max_scaler.fit_transform(x)
@@ -119,6 +120,7 @@ for diff_file in files:
 
     # train_df[6]=0;
     # train_df[7]=0;
+    # print(diff_file)
     # print(train_df)
     # exit("Stop")
 
